@@ -18,7 +18,7 @@ const IMAGE_MAP: Record<string, string> = {
   'Royal Silk Kurta Set': '/images/fabric-collection.jpeg',
   'Classic Cotton Kurta': '/images/linen-collection.jpeg',
   'Festive Sherwani': '/images/classics-collection.jpeg',
-  'Indo-Western Blazer': '/images/mens-linen-shirts.jpeg',
+  'Indo-Western Blazer': '/images/men-linen-shirts.jpeg',
   'Traditional Dhoti Set': '/images/fabric-collection.jpeg',
   'Linen Safari Kurta': '/images/linen-collection.jpeg',
   'Bandhani Leheriya': '/images/summer-linen-pants.jpeg',

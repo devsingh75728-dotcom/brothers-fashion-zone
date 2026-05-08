@@ -49,7 +49,7 @@ const showcaseImages = [
     col: 'left',
   },
   {
-    src: '/images/mens-linen-shirts.jpeg',
+    src: '/images/men-linen-shirts.jpeg',
     alt: 'Summer Colors',
     height: 'normal',
     col: 'right',

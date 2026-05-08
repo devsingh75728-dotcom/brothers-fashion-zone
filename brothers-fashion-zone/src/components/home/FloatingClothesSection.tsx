@@ -16,13 +16,13 @@ const floatingItems = [
 ];
 
 const sampleImages = [
-  '/images/linen-collection.jpeg',
+  '/images/fabric-collection.jpeg',
   '/images/archive-sale.jpeg',
   '/images/premium-basics.jpeg',
   '/images/classics-collection.jpeg',
   '/images/denim-details.jpeg',
-  '/images/mens-linen-shirts.jpeg',
   '/images/fabric-collection.jpeg',
+  '/images/linen-collection.jpeg',
   '/images/summer-linen-pants.jpeg',
 ];
 

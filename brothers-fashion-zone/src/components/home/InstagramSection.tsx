@@ -63,7 +63,7 @@ const postImages = [
   '/images/premium-basics.jpeg',
   '/images/classics-collection.jpeg',
   '/images/denim-details.jpeg',
-  '/images/mens-linen-shirts.jpeg',
+  '/images/men-linen-shirts.jpeg',
 ];
 
 export function InstagramSection() {

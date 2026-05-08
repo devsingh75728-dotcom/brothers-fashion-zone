@@ -34,6 +34,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://brothersfashionzone.com'),
   title: "Brother's Fashion Zone — Premium Ethnic & Western Fashion India",
   description: 'Shop premium ethnic wear, kurtas, sarees, western fashion and accessories. Pan India delivery from Nani Daman. Prepaid orders only.',
   openGraph: {
