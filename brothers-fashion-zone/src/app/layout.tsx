@@ -11,6 +11,7 @@ import { CustomCursor } from '@/components/ui/CustomCursor'
 import { PageTransition } from '@/components/ui/PageTransition'
 import { ScrollToTop } from '@/components/ui/ScrollToTop'
 import { CartProvider } from '@/components/providers/CartProvider'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
@@ -76,6 +77,7 @@ export default function RootLayout({
               {children}
             </PageTransition>
             <ScrollToTop />
+            <SpeedInsights />
           </CartProvider>
         </Providers>
       </body>
