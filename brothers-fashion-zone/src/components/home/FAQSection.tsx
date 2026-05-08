@@ -25,7 +25,7 @@ const FAQS = [
 
 export function FAQSection() {
   return (
-    <section className="bg-black border-b-2 border-yellow-400 py-12 px-6">
+    <section id="faq" className="bg-black border-b-2 border-yellow-400 py-12 px-6">
       <div className="max-w-7xl mx-auto">
         <h2 className="font-display font-black text-3xl md:text-4xl uppercase text-white leading-[0.95]">
           FREQUENTLY ASKED QUESTIONS

@@ -34,8 +34,22 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Brother's Fashion Zone — India's Premium Fashion Store",
-  description: 'Shop premium ethnic wear, western fashion, footwear, watches and accessories. Delivered across India.',
+  title: "Brother's Fashion Zone — Premium Ethnic & Western Fashion India",
+  description: 'Shop premium ethnic wear, kurtas, sarees, western fashion and accessories. Pan India delivery from Nani Daman. Prepaid orders only.',
+  openGraph: {
+    title: "Brother's Fashion Zone — Premium Ethnic & Western Fashion India",
+    description: 'Shop premium ethnic wear, kurtas, sarees, western fashion and accessories. Pan India delivery from Nani Daman. Prepaid orders only.',
+    images: ['/images/brothers-logo.jpeg'],
+    url: 'https://brothersfashionzone.com',
+    siteName: "Brother's Fashion Zone",
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Brother's Fashion Zone — Premium Ethnic & Western Fashion India",
+    description: 'Shop premium ethnic wear, kurtas, sarees, western fashion and accessories. Pan India delivery from Nani Daman.',
+    images: ['/images/brothers-logo.jpeg'],
+  },
   icons: {
     icon: '/favicon.ico',
   },

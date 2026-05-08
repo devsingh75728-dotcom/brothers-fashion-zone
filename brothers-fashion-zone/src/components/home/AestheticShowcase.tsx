@@ -7,49 +7,49 @@ import { Plus } from 'lucide-react';
 
 const showcaseImages = [
   {
-    src: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=600&q=80',
+    src: '/images/premium-basics.jpeg',
     alt: 'Premium Basics',
     height: 'tall',
     col: 'left',
   },
   {
-    src: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=600&q=80',
+    src: '/images/archive-sale.jpeg',
     alt: 'Archive Sale',
     height: 'normal',
     col: 'center',
   },
   {
-    src: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&q=80',
+    src: '/images/denim-details.jpeg',
     alt: 'Denim Collection',
     height: 'tall',
     col: 'right',
   },
   {
-    src: 'https://images.unsplash.com/photo-1565084888279-aca607ecce0c?w=600&q=80',
+    src: '/images/fabric-collection.jpeg',
     alt: 'Denim Details',
     height: 'normal',
     col: 'left',
   },
   {
-    src: 'https://images.unsplash.com/photo-1596755094514-f54e01c0b71d?w=600&q=80',
+    src: '/images/linen-collection.jpeg',
     alt: 'Linen Shirts',
     height: 'normal',
     col: 'center',
   },
   {
-    src: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&q=80',
+    src: '/images/classics-collection.jpeg',
     alt: 'Classics Collection',
     height: 'tall',
     col: 'right',
   },
   {
-    src: 'https://images.unsplash.com/photo-1594938298603-c8148c4b4357?w=600&q=80',
+    src: '/images/summer-linen-pants.jpeg',
     alt: 'Linen Collection',
     height: 'normal',
     col: 'left',
   },
   {
-    src: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=600&q=80',
+    src: '/images/mens-linen-shirts.jpeg',
     alt: 'Summer Colors',
     height: 'normal',
     col: 'right',

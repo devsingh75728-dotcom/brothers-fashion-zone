@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 const InstagramIcon = ({ size = 20, className = '' }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -8,48 +10,120 @@ const InstagramIcon = ({ size = 20, className = '' }: { size?: number; className
   </svg>
 );
 
+function CountUp({ end, duration = 2000, suffix = '' }: { end: number; duration?: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isInView) {
+          setIsInView(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => observer.disconnect();
+  }, [isInView]);
+
+  useEffect(() => {
+    if (!isInView) return;
+    
+    let start = 0;
+    const increment = end / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    
+    return () => clearInterval(timer);
+  }, [isInView, end, duration]);
+
+  return (
+    <span ref={ref}>
+      {count}{suffix}
+    </span>
+  );
+}
+
+const postImages = [
+  '/images/linen-collection.jpeg',
+  '/images/archive-sale.jpeg',
+  '/images/premium-basics.jpeg',
+  '/images/classics-collection.jpeg',
+  '/images/denim-details.jpeg',
+  '/images/mens-linen-shirts.jpeg',
+];
+
 export function InstagramSection() {
   return (
     <section className="bg-[#0A0A0A] py-16 px-4">
       <div className="max-w-3xl mx-auto">
-        {/* Profile Card */}
-        <motion.div
+        <motion.h2
           initial={{ y: 30, opacity: 0 }}
           whileInView={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5 }}
           viewport={{ once: true }}
+          className="font-display font-black text-2xl md:text-3xl text-white text-center mb-6"
+        >
+          Follow Us for Daily Style Inspo
+        </motion.h2>
+
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          whileInView={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          viewport={{ once: true }}
           className="bg-[#0A0A0A] border-2 border-[#0A0A0A] shadow-[6px_6px_0px_#0A0A0A] p-8"
         >
-          {/* Profile Section */}
           <div className="flex items-center gap-5 mb-6">
-            {/* Logo Circle */}
-            <div className="w-[72px] h-[72px] rounded-full border-[3px] border-[#0A0A0A] shadow-[3px_3px_0px_#0A0A0A] bg-[#C9B99A] flex items-center justify-center flex-shrink-0 overflow-hidden">
-              <span className="font-display font-black text-[24px] text-[#0A0A0A]">B</span>
-            </div>
+            <Image
+              src="/images/brothers-logo.jpeg"
+              alt="Brother's Fashion Zone"
+              width={80}
+              height={80}
+              className="rounded-full object-cover flex-shrink-0 border-[3px] border-[#0A0A0A] shadow-[3px_3px_0px_#0A0A0A]"
+            />
             <div>
-              <p className="font-display font-black text-[18px] text-white">@brothers_fashion_zone_</p>
-              <p className="text-[14px] text-white/60 mt-1">Brother&apos;s Fashion Zone</p>
-              <p className="font-mono text-[12px] text-white/40 mt-1">Clothing (brand) • 🇮🇳 All over India delivery</p>
+              <p className="font-display font-black text-[18px] text-white">BROTHER&apos;S FASHION ZONE</p>
+              <p className="font-mono text-[12px] text-white/40 mt-1">E-commerce website • Elevating Your Everyday Style.</p>
+              <p className="font-mono text-[12px] text-white/40 mt-1">📍 Jetty Road, Nani Daman</p>
+              <p className="font-mono text-[12px] text-[#C9B99A] mt-2 font-semibold">Pan India Delivery | Prepaid Only</p>
             </div>
           </div>
 
-          {/* Stats Row */}
           <div className="flex border-y-2 border-white/10 py-5 my-5">
             <div className="flex-1 text-center border-r border-white/10">
-              <p className="font-display font-black text-[32px] text-white">443</p>
+              <p className="font-display font-black text-[32px] text-white">
+                <CountUp end={443} duration={1800} />
+              </p>
               <p className="font-mono text-[11px] text-white/40 uppercase tracking-wide mt-1">Posts</p>
             </div>
             <div className="flex-1 text-center border-r border-white/10">
-              <p className="font-display font-black text-[32px] text-[#C9B99A]">535</p>
+              <p className="font-display font-black text-[32px] text-[#C9B99A]">
+                <CountUp end={533} duration={2000} />
+              </p>
               <p className="font-mono text-[11px] text-white/40 uppercase tracking-wide mt-1">Followers</p>
             </div>
             <div className="flex-1 text-center">
-              <p className="font-display font-black text-[32px] text-white">1</p>
+              <p className="font-display font-black text-[32px] text-white">
+                <CountUp end={1} duration={500} />
+              </p>
               <p className="font-mono text-[11px] text-white/40 uppercase tracking-wide mt-1">Following</p>
             </div>
           </div>
 
-          {/* Follow Button */}
           <a
             href="https://www.instagram.com/brothers_fashion_zone_"
             target="_blank"
@@ -61,23 +135,24 @@ export function InstagramSection() {
           </a>
         </motion.div>
 
-        {/* View All Button */}
         <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
           viewport={{ once: true }}
-          className="flex justify-center mt-6"
+          className="grid grid-cols-3 gap-2 mt-8"
         >
-          <button
-            onClick={() => window.open('https://www.instagram.com/brothers_fashion_zone_', '_blank')}
-            className="bg-transparent border-2 border-white/20 shadow-[4px_4px_0px_#0A0A0A] hover:bg-white/10 hover:shadow-[6px_6px_0px_#0A0A0A] transition-all duration-200 h-12 px-8 font-display font-black text-[14px] uppercase text-white"
-          >
-            VIEW ALL POSTS ON INSTAGRAM →
-          </button>
+          {postImages.map((img, idx) => (
+            <motion.div
+              key={idx}
+              whileHover={{ scale: 1.05 }}
+              className="aspect-square border-2 border-white/10 overflow-hidden cursor-pointer"
+            >
+              <Image src={img} alt={`Instagram post ${idx + 1}`} fill className="object-cover" sizes="(max-width: 768px) 33vw, 200px" />
+            </motion.div>
+          ))}
         </motion.div>
 
-        {/* Hashtags */}
         <div className="flex justify-center gap-2 mt-8 flex-wrap">
           <span className="font-mono text-[12px] text-[#C9B99A]">#BrothersFashionZone</span>
           <span className="text-white/30">•</span>

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Eye } from 'lucide-react';
+import { ShoppingCart, Eye, Heart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCartStore, CartItem } from '@/store/cartStore';
 import { products } from '@/data/products';
@@ -13,17 +14,160 @@ type FilterType = typeof FILTERS[number];
 
 const VIEW_COUNTS = [488, 234, 156, 389, 271, 445, 198, 322];
 
+const IMAGE_MAP: Record<string, string> = {
+  'Royal Silk Kurta Set': '/images/fabric-collection.jpeg',
+  'Classic Cotton Kurta': '/images/linen-collection.jpeg',
+  'Festive Sherwani': '/images/classics-collection.jpeg',
+  'Indo-Western Blazer': '/images/mens-linen-shirts.jpeg',
+  'Traditional Dhoti Set': '/images/fabric-collection.jpeg',
+  'Linen Safari Kurta': '/images/linen-collection.jpeg',
+  'Bandhani Leheriya': '/images/summer-linen-pants.jpeg',
+  'Silk Embroidered Blouse': '/images/summer-linen-pants.jpeg',
+};
+
 const PRODUCT_CARDS = products.slice(0, 8).map((p, idx) => ({
   id: p.id || `prod_${idx}`,
   name: p.name || 'Product',
   slug: p.slug || p.id || `prod_${idx}`,
   price: p.price || 0,
   originalPrice: p.originalPrice,
-  image: p.images?.[0] || '',
+  image: IMAGE_MAP[p.name] || p.images?.[0] || '/images/premium-basics.jpeg',
   badge: p.onSale ? 'SALE' : p.featured ? 'NEW' : null,
   discount: p.originalPrice ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0,
   views: VIEW_COUNTS[idx] || 200,
 })).filter(p => p.slug && p.name);
+
+interface ProductCardProps {
+  product: typeof PRODUCT_CARDS[0];
+  index: number;
+  onAddToCart: (product: typeof PRODUCT_CARDS[0]) => void;
+}
+
+function ProductCard({ product, index, onAddToCart }: ProductCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [rotate, setRotate] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    
+    const mouseX = e.clientX - centerX;
+    const mouseY = e.clientY - centerY;
+    
+    const rotateX = (mouseY / (rect.height / 2)) * -8;
+    const rotateY = (mouseX / (rect.width / 2)) * 8;
+    
+    setRotate({ 
+      x: Math.max(-8, Math.min(8, rotateX)), 
+      y: Math.max(-8, Math.min(8, rotateY)) 
+    });
+  }, []);
+
+  const handleMouseLeave = () => {
+    setRotate({ x: 0, y: 0 });
+    setIsHovered(false);
+  };
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsWishlisted(!isWishlisted);
+    if (!isWishlisted) {
+      toast.success('Added to wishlist!');
+    }
+  };
+
+  return (
+    <motion.div
+      ref={cardRef}
+      initial={{ y: 60, opacity: 0, scale: 0.95 }}
+      whileInView={{ y: 0, opacity: 1, scale: 1 }}
+      transition={{ delay: index * 0.08, duration: 0.5 }}
+      viewport={{ once: true }}
+      style={{
+        transform: `perspective(800px) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
+        transition: isHovered ? 'none' : 'transform 400ms ease-out',
+        transformStyle: 'preserve-3d',
+      }}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={handleMouseLeave}
+      className="bg-white border-2 border-black relative group cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0A0A0A] transition-all duration-300"
+    >
+      <Link href={`/products/${product.slug}`} className="block">
+        <div className="aspect-[4/5] overflow-hidden relative">
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            className="object-cover object-top transition-transform duration-300 group-hover:scale-[1.04]"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+          {product.badge && (
+            <div className={`absolute top-0 left-0 border-2 border-black px-2 py-1 ${
+              product.badge === 'SALE' ? 'bg-pink-500' : 'bg-green-400'
+            }`}>
+              <span className="font-display font-black text-[11px] uppercase text-black">
+                {product.badge === 'SALE' ? `-${product.discount}%` : product.badge}
+              </span>
+            </div>
+          )}
+          
+          {/* Wishlist heart */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isHovered ? 1 : 0 }}
+            onClick={handleWishlist}
+            whileTap={{ scale: 1.5 }}
+            className="absolute top-3 right-3 w-10 h-10 bg-white border-2 border-black rounded-full flex items-center justify-center transition-all"
+            style={{ color: isWishlisted ? '#FF2D6B' : '#0A0A0A' }}
+          >
+            <Heart size={18} fill={isWishlisted ? '#FF2D6B' : 'none'} />
+          </motion.button>
+        </div>
+        
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 to-transparent p-3">
+          <h3 className="font-display font-bold text-[13px] uppercase text-white truncate">
+            {product.name}
+          </h3>
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-2">
+              {product.originalPrice && (
+                <span className="font-mono text-[12px] text-white/60 line-through">
+                  ₹{product.originalPrice.toLocaleString()}
+                </span>
+              )}
+              <span className={`font-display font-black text-[16px] ${product.discount > 0 ? 'text-green-400' : 'text-white'}`}>
+                ₹{product.price.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-white/70">
+              <Eye size={12} />
+              <span className="font-mono text-[11px]">{product.views}</span>
+            </div>
+          </div>
+        </div>
+      </Link>
+      
+      <motion.button
+        whileHover={{ scale: 1.05, backgroundColor: '#FFD600' }}
+        whileTap={{ scale: 0.95 }}
+        onClick={(e) => {
+          e.preventDefault();
+          onAddToCart(product);
+        }}
+        className="absolute top-3 left-3 w-10 h-10 bg-white border-2 border-black flex items-center justify-center hover:shadow-[2px_2px_0px_#0A0A0A] transition-all duration-200"
+        aria-label="Add to cart"
+      >
+        <ShoppingCart size={18} className="text-black" />
+      </motion.button>
+    </motion.div>
+  );
+}
 
 export function FeaturedProducts() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
@@ -81,66 +225,14 @@ export function FeaturedProducts() {
           ))}
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-0.5">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-0.5">
           {displayedProducts.map((product, idx) => (
-            <motion.div
+            <ProductCard
               key={product.id}
-              initial={{ y: 40, opacity: 0 }}
-              whileInView={{ y: 0, opacity: 1 }}
-              transition={{ delay: idx * 0.06, duration: 0.5 }}
-              viewport={{ once: true }}
-              className="bg-white border-2 border-black relative group cursor-pointer hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0A0A0A] transition-all duration-300"
-            >
-              <Link href={`/products/${product.slug}`} className="block">
-                <div className="aspect-[4/5] overflow-hidden relative">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover object-top transition-transform duration-600 group-hover:scale-105"
-                  />
-                  {product.badge && (
-                    <div className={`absolute top-0 left-0 border-2 border-black px-2 py-1 ${
-                      product.badge === 'SALE' ? 'bg-pink-500' : 'bg-green-400'
-                    }`}>
-                      <span className="font-display font-black text-[11px] uppercase text-black">
-                        {product.badge === 'SALE' ? `-${product.discount}%` : product.badge}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 to-transparent p-3">
-                  <h3 className="font-display font-bold text-[13px] uppercase text-white truncate">
-                    {product.name}
-                  </h3>
-                  <div className="flex items-center justify-between mt-1">
-                    <div className="flex items-center gap-2">
-                      {product.originalPrice && (
-                        <span className="font-mono text-[12px] text-white/60 line-through">
-                          ₹{product.originalPrice.toLocaleString()}
-                        </span>
-                      )}
-                      <span className={`font-display font-black text-[16px] ${product.discount > 0 ? 'text-green-400' : 'text-white'}`}>
-                        ₹{product.price.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 text-white/70">
-                      <Eye size={12} />
-                      <span className="font-mono text-[11px]">{product.views}</span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleAddToCart(product);
-                }}
-                className="absolute top-2.5 right-2.5 w-10 h-10 bg-white border-2 border-black rounded-full flex items-center justify-center hover:bg-yellow-400 hover:shadow-[2px_2px_0px_#0A0A0A] transition-all duration-200"
-                aria-label="Add to cart"
-              >
-                <ShoppingCart size={18} className="text-black" />
-              </button>
-            </motion.div>
+              product={product}
+              index={idx}
+              onAddToCart={handleAddToCart}
+            />
           ))}
         </div>
 

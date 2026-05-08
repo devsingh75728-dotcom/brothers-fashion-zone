@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Search, Heart, ShoppingBag, User, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -79,13 +80,20 @@ export function Navbar() {
         ref={navbarRef}
         className={`fixed left-0 right-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'h-[60px] bg-white/90 backdrop-blur-sm border-b-2 border-black'
+            ? 'h-[60px] bg-white/95 backdrop-blur-md border-b-2 border-black shadow-lg'
             : 'h-[72px] bg-white border-b-2 border-transparent'
         }`}
         style={{ top: topPosition }}
       >
         <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-1">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/images/brothers-logo.jpeg"
+              alt="Brother's Fashion Zone"
+              width={44}
+              height={44}
+              className="rounded-full object-cover"
+            />
             <span className="font-display font-black text-lg uppercase tracking-wide">
               Brother&apos;s Fashion Zone
             </span>
@@ -103,7 +111,7 @@ export function Navbar() {
                 <Link
                   href={link.href}
                   className={`px-3 py-2 text-[13px] uppercase tracking-wide font-inter transition-all duration-150 hover:bg-yellow-400 ${
-                    pathname === link.href ? 'bg-black text-white' : ''
+                    pathname === link.href ? 'bg-black text-white font-bold' : ''
                   }`}
                 >
                   {link.label}
@@ -242,6 +250,7 @@ export function Navbar() {
                 >
                   <Link
                     href={link.href}
+                    onClick={() => setMobileOpen(false)}
                     className="block py-4 text-[36px] font-display font-black text-white border-b-2 border-white/10 hover:bg-white/5 transition-colors"
                   >
                     {link.label}

@@ -417,7 +417,7 @@ export default function ProductPage() {
                 </div>
                 <div>
                   <p className="font-display font-black text-[18px] uppercase text-[#0A0A0A]">SHOP WITH CONFIDENCE</p>
-                  <p className="font-mono text-[11px] text-[#6B5CE7] uppercase underline">LEARN ABOUT OUR 4-STEP VETTING →</p>
+                  <p className="font-mono text-[11px] text-[#6B5CE7] uppercase underline"><Link href="/vetting">LEARN ABOUT OUR 4-STEP VETTING →</Link></p>
                 </div>
               </div>
 

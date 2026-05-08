@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { ShieldCheck, Wallet, CreditCard, Truck } from 'lucide-react';
 
 const TRUST_CARDS = [
@@ -20,9 +21,9 @@ export function WhyIndiaTrustsUs() {
         <h2 className="font-display font-black text-4xl md:text-5xl text-purple-500 leading-[0.95]">
           TRUSTS US
         </h2>
-        <p className="font-display font-bold text-[11px] uppercase underline mt-3 cursor-pointer text-black">
+        <Link href="/vetting" className="font-display font-bold text-[11px] uppercase underline mt-3 cursor-pointer text-black block">
           LEARN ABOUT VETTING →
-        </p>
+        </Link>
         <div className="border-t-2 border-black mt-6" />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">

@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 
 export function TrustBar() {
   return (
@@ -14,9 +15,9 @@ export function TrustBar() {
             <p className="font-mono text-[14px] text-black mt-2">
               Curated fashion from trusted sources.
             </p>
-            <p className="font-display font-bold text-[11px] uppercase underline mt-3 cursor-pointer text-black">
+            <Link href="/trust-policy" className="font-display font-bold text-[11px] uppercase underline mt-3 cursor-pointer text-black block">
               LEARN ABOUT OUR TRUST POLICY →
-            </p>
+            </Link>
           </div>
         </div>
       </div>

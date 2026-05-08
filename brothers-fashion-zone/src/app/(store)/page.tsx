@@ -1,11 +1,13 @@
 import { HeroSection } from '@/components/home/HeroSection';
+import { CategoryCircles } from '@/components/home/CategoryCircles';
 import { TrustBar } from '@/components/home/TrustBar';
-import { AestheticShowcase } from '@/components/home/AestheticShowcase';
 import { FeaturedProducts } from '@/components/home/FeaturedProducts';
-
-import { VideoShowcase } from '@/components/home/VideoShowcase';
+import { SaleAlertBanner } from '@/components/home/SaleAlertBanner';
+import { AestheticShowcase } from '@/components/home/AestheticShowcase';
+import { FloatingClothesSection } from '@/components/home/FloatingClothesSection';
 import { WhyIndiaTrustsUs } from '@/components/home/WhyIndiaTrustsUs';
 import { MarketplaceSection } from '@/components/home/MarketplaceSection';
+import { ReviewsSection } from '@/components/home/ReviewsSection';
 import { GuidesSection } from '@/components/home/GuidesSection';
 import { InstagramSection } from '@/components/home/InstagramSection';
 import { FAQSection } from '@/components/home/FAQSection';
@@ -15,12 +17,15 @@ export default function HomePage() {
   return (
     <main>
       <HeroSection />
+      <CategoryCircles />
       <TrustBar />
-      <AestheticShowcase />
       <FeaturedProducts />
-      <VideoShowcase />
+      <SaleAlertBanner />
+      <AestheticShowcase />
+      <FloatingClothesSection />
       <WhyIndiaTrustsUs />
       <MarketplaceSection />
+      <ReviewsSection />
       <GuidesSection />
       <InstagramSection />
       <FAQSection />

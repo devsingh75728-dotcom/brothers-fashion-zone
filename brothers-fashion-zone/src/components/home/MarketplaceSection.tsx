@@ -3,10 +3,10 @@
 import { motion } from 'framer-motion';
 
 const HASHTAGS = [
-  { text: '#SHOPBFZ', bg: '#6B5CE7', color: 'white' },
-  { text: '#ETHNICWEAR', bg: '#FFD600', color: 'black' },
-  { text: '#PREMIUMFASHION', bg: '#FF2D6B', color: 'white' },
-  { text: '#STYLEFORALL', bg: '#FFFFFF', color: 'black' },
+  { text: '#SHOPBFZ', href: 'https://www.instagram.com/explore/tags/shopbfz/', bg: '#6B5CE7', color: 'white' },
+  { text: '#ETHNICWEAR', href: 'https://www.instagram.com/explore/tags/ethnicwear/', bg: '#FFD600', color: 'black' },
+  { text: '#PREMIUMFASHION', href: 'https://www.instagram.com/explore/tags/premiumfashion/', bg: '#FF2D6B', color: 'white' },
+  { text: '#STYLEFORALL', href: 'https://www.instagram.com/explore/tags/styleforall/', bg: '#FFFFFF', color: 'black' },
 ];
 
 export function MarketplaceSection() {
@@ -57,7 +57,9 @@ export function MarketplaceSection() {
           {HASHTAGS.map((tag, idx) => (
             <motion.a
               key={tag.text}
-              href="#"
+              href={tag.href}
+              target="_blank"
+              rel="noopener noreferrer"
               initial={{ x: -20, opacity: 0 }}
               whileInView={{ x: 0, opacity: 1 }}
               transition={{ delay: idx * 0.1 }}
