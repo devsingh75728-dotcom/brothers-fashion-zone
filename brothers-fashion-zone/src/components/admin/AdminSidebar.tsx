@@ -4,13 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, ShoppingBag, Package, Tag, Video, 
-  Users, MessageCircle, Percent, Settings, LogOut 
+  Users, MessageCircle, Percent, Settings, LogOut, Grid3X3, Image 
 } from 'lucide-react';
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/admin/orders', icon: ShoppingBag, label: 'Orders' },
   { href: '/admin/products', icon: Package, label: 'Products' },
+  { href: '/admin/categories', icon: Grid3X3, label: 'Categories' },
+  { href: '/admin/banners', icon: Image, label: 'Banners' },
   { href: '/admin/brands', icon: Tag, label: 'Brands' },
   { href: '/admin/videos', icon: Video, label: 'Videos' },
   { href: '/admin/customers', icon: Users, label: 'Customers' },

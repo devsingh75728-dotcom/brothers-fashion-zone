@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { X, UploadCloud, Plus, Trash2 } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { X, UploadCloud, Plus, Trash2, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
@@ -18,12 +18,54 @@ const categories = [
   { value: 'clothing_women', label: 'Women\'s Clothing' },
   { value: 'footwear_men', label: 'Men\'s Footwear' },
   { value: 'footwear_women', label: 'Women\'s Footwear' },
+  { value: 'footwear_kids', label: 'Kids\' Footwear' },
   { value: 'watches', label: 'Watches' },
   { value: 'bags', label: 'Bags' },
   { value: 'accessories', label: 'Accessories' },
 ];
 
-const sizeOptions = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+const SIZE_OPTIONS: Record<string, string[]> = {
+  clothing_men: ['XS','S','M','L','XL','XXL','XXXL','28','30','32','34','36','38','40','42'],
+  clothing_women: ['XS','S','M','L','XL','XXL','XXXL','28','30','32','34','36','38','40'],
+  footwear_men: ['UK 6','UK 6.5','UK 7','UK 7.5','UK 8','UK 8.5','UK 9','UK 9.5','UK 10','UK 11','UK 12'],
+  footwear_women: ['UK 3','UK 3.5','UK 4','UK 4.5','UK 5','UK 5.5','UK 6','UK 6.5','UK 7','UK 7.5','UK 8'],
+  footwear_kids: ['UK 1','UK 2','UK 3','UK 4','UK 5','UK 6'],
+  watches: ['Free Size','36mm','38mm','40mm','42mm','44mm'],
+  bags: ['Free Size','Mini','Small','Medium','Large'],
+  accessories: ['Free Size','XS','S','M','L','XL'],
+};
+
+const PRESET_COLORS = [
+  { name: 'Black', hex: '#1A1A1A' },
+  { name: 'White', hex: '#FFFFFF' },
+  { name: 'Red', hex: '#DC2626' },
+  { name: 'Blue', hex: '#2563EB' },
+  { name: 'Green', hex: '#16A34A' },
+  { name: 'Yellow', hex: '#FFD600' },
+  { name: 'Pink', hex: '#FF2D6B' },
+  { name: 'Orange', hex: '#EA580C' },
+  { name: 'Purple', hex: '#6B5CE7' },
+  { name: 'Brown', hex: '#92400E' },
+  { name: 'Cream', hex: '#F5F0E8' },
+  { name: 'Navy', hex: '#1B2A4A' },
+];
+
+const uploadImage = async (file: File): Promise<string> => {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+  const { data, error } = await supabase.storage
+    .from('product-images')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type,
+    });
+  if (error) throw new Error(error.message);
+  const { data: { publicUrl } } = supabase.storage
+    .from('product-images')
+    .getPublicUrl(data.path);
+  return publicUrl;
+};
 
 export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: ProductFormModalProps) {
   const [loading, setLoading] = useState(false);
@@ -40,9 +82,23 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
     is_featured: editProduct?.is_featured || false,
     is_active: editProduct?.is_active !== false,
   });
+  
   const [colorInput, setColorInput] = useState('');
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [selectedColors, setSelectedColors] = useState<string[]>(editProduct?.colors || []);
+  const [customColor, setCustomColor] = useState('');
+  const [sizeStock, setSizeStock] = useState<{size: string, stock: number}[]>(
+    editProduct?.variants?.map((v: any) => ({ size: v.size, stock: v.stock })) || []
+  );
+  const [customSize, setCustomSize] = useState('');
+
+  useEffect(() => {
+    if (formData.category && SIZE_OPTIONS[formData.category] && !editProduct) {
+      setSizeStock(SIZE_OPTIONS[formData.category].map(s => ({ size: s, stock: 0 })));
+    }
+  }, [formData.category]);
 
   const generateSlug = (name: string) => {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -65,14 +121,11 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
       if (!file.type.startsWith('image/')) continue;
 
       try {
-        const reader = new FileReader();
-        const imageData = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
-        });
-        newImages.push(imageData);
+        const url = await uploadImage(file);
+        newImages.push(url);
       } catch (err) {
-        console.error('Error reading file:', err);
+        console.error('Error uploading file:', err);
+        toast.error('Failed to upload image');
       }
     }
 
@@ -89,29 +142,36 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
     setFormData({ ...formData, images: formData.images.filter((_img: string, i: number) => i !== index) });
   };
 
-  const addVariant = () => {
-    setFormData({ ...formData, variants: [...formData.variants, { size: 'M', stock: 10 }] });
+  const toggleColor = (colorName: string) => {
+    if (selectedColors.includes(colorName)) {
+      setSelectedColors(selectedColors.filter(c => c !== colorName));
+    } else {
+      setSelectedColors([...selectedColors, colorName]);
+    }
   };
 
-  const updateVariant = (index: number, field: string, value: string | number) => {
-    const updated = [...formData.variants];
-    updated[index] = { ...updated[index], [field]: value };
-    setFormData({ ...formData, variants: updated });
-  };
-
-  const removeVariant = (index: number) => {
-    setFormData({ ...formData, variants: formData.variants.filter((_v: any, i: number) => i !== index) });
-  };
-
-  const addColor = () => {
-    if (colorInput.trim() && !formData.colors.includes(colorInput.trim())) {
-      setFormData({ ...formData, colors: [...formData.colors, colorInput.trim()] });
-      setColorInput('');
+  const addCustomColor = () => {
+    if (customColor.trim() && !selectedColors.includes(customColor.trim())) {
+      setSelectedColors([...selectedColors, customColor.trim()]);
+      setCustomColor('');
     }
   };
 
   const removeColor = (color: string) => {
-    setFormData({ ...formData, colors: formData.colors.filter((c: string) => c !== color) });
+    setSelectedColors(selectedColors.filter(c => c !== color));
+  };
+
+  const updateSizeStock = (index: number, stock: number) => {
+    const updated = [...sizeStock];
+    updated[index].stock = stock;
+    setSizeStock(updated);
+  };
+
+  const addCustomSize = () => {
+    if (customSize.trim() && !sizeStock.find(s => s.size === customSize.trim())) {
+      setSizeStock([...sizeStock, { size: customSize.trim(), stock: 0 }]);
+      setCustomSize('');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,7 +189,7 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
         ? Math.round(((parseFloat(formData.original_price) - parseFloat(formData.price)) / parseFloat(formData.original_price)) * 100)
         : 0;
 
-      const total_stock = formData.variants.reduce((sum: number, v: any) => sum + (v.stock || 0), 0);
+      const total_stock = sizeStock.reduce((sum, v) => sum + (v.stock || 0), 0);
 
       const productData = {
         name: formData.name,
@@ -141,8 +201,8 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
         discount_pct,
         description: formData.description || null,
         images: formData.images,
-        variants: formData.variants,
-        colors: formData.colors,
+        variants: sizeStock.map(s => ({ size: s.size, stock: s.stock })),
+        colors: selectedColors,
         tags: [],
         total_stock,
         is_active: formData.is_active,
@@ -180,13 +240,11 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
 
   return (
     <div className="fixed inset-0 z-50">
-      {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/80 backdrop-blur-sm" 
         onClick={onClose}
       />
       
-      {/* Panel */}
       <motion.div
         initial={{ x: '100%' }}
         animate={{ x: 0 }}
@@ -194,7 +252,6 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className="fixed right-0 top-0 h-full w-full md:w-[600px] bg-[#111111] border-l border-[#1A1A1A] overflow-y-auto"
       >
-        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#1A1A1A] sticky top-0 bg-[#111111] z-10">
           <h2 className="font-display font-semibold text-2xl text-white">
             {editProduct ? 'Edit Product' : 'Add Product'}
@@ -207,9 +264,7 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6 pb-32">
-          {/* Product Name */}
           <div>
             <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Product Name *</label>
             <input
@@ -222,7 +277,6 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
             />
           </div>
 
-          {/* Slug */}
           <div>
             <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Slug</label>
             <input
@@ -234,7 +288,6 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
             />
           </div>
 
-          {/* Category */}
           <div>
             <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Category *</label>
             <select
@@ -248,7 +301,6 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
             </select>
           </div>
 
-          {/* Price */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Price (₹) *</label>
@@ -279,7 +331,6 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
             </div>
           </div>
 
-          {/* Description */}
           <div>
             <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Description</label>
             <textarea
@@ -291,11 +342,9 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
             />
           </div>
 
-          {/* Image Upload */}
           <div>
             <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Product Images (max 6)</label>
             
-            {/* Drop Zone */}
             <div
               onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.borderColor = '#C9B99A'; }}
               onDragLeave={(e) => { e.currentTarget.style.borderColor = '#222'; }}
@@ -318,7 +367,6 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
               className="hidden"
             />
 
-            {/* Image Previews */}
             {formData.images.length > 0 && (
               <div className="grid grid-cols-4 gap-2 mt-3">
                 {formData.images.map((img: string, i: number) => (
@@ -337,69 +385,98 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
             )}
           </div>
 
-          {/* Size & Stock */}
           <div>
             <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Size & Stock</label>
-            <div className="space-y-2">
-              {formData.variants.map((variant: any, i: number) => (
-                <div key={i} className="flex items-center gap-2">
-                  <select
-                    value={variant.size}
-                    onChange={(e) => updateVariant(i, 'size', e.target.value)}
-                    className="h-10 bg-[#0A0A0A] border border-[#222] rounded-lg px-3 text-white font-inter text-sm focus:border-[#C9B99A] focus:outline-none"
-                  >
-                    {sizeOptions.map(s => <option key={s} value={s} className="bg-[#0A0A0A]">{s}</option>)}
-                  </select>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {sizeStock.map((item, i) => (
+                <div key={i} className="inline-flex items-center gap-2 bg-[#1A1A1A] border border-[#2A2A2A] px-3 py-2 rounded-lg">
+                  <span className="text-white text-[13px] font-inter">{item.size}</span>
                   <input
                     type="number"
-                    value={variant.stock}
-                    onChange={(e) => updateVariant(i, 'stock', parseInt(e.target.value) || 0)}
-                    placeholder="Stock"
-                    className="flex-1 h-10 bg-[#0A0A0A] border border-[#222] rounded-lg px-3 text-white font-inter text-sm focus:border-[#C9B99A] focus:outline-none"
+                    value={item.stock}
+                    onChange={(e) => updateSizeStock(i, parseInt(e.target.value) || 0)}
+                    min={0}
+                    className="w-12 border-b border-[#C9B99A] bg-transparent text-white text-[13px] font-inter text-center focus:outline-none"
                   />
-                  {formData.variants.length > 1 && (
-                    <button type="button" onClick={() => removeVariant(i)} className="text-red-400 hover:text-red-300">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
                 </div>
               ))}
-              <button type="button" onClick={addVariant} className="flex items-center gap-1 text-[#C9B99A] text-sm font-inter">
-                <Plus size={14} /> Add Size
+            </div>
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="text"
+                value={customSize}
+                onChange={(e) => setCustomSize(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomSize())}
+                placeholder="e.g. UK 6.5 or Free Size"
+                className="flex-1 h-10 bg-[#0A0A0A] border border-[#222] rounded-lg px-3 text-white font-inter text-sm focus:border-[#C9B99A] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={addCustomSize}
+                className="h-10 px-4 border border-[#C9B99A] text-[#C9B99A] bg-transparent rounded-lg font-inter text-sm hover:bg-[#C9B99A] hover:text-black transition-colors"
+              >
+                + Add
               </button>
             </div>
           </div>
 
-          {/* Colors */}
           <div>
             <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2 font-inter">Colors</label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {formData.colors.map((color: string) => (
-                <span key={color} className="flex items-center gap-1 bg-[#1A1A1A] px-2 py-1 rounded text-white text-sm font-inter">
-                  <span className="w-3 h-3 rounded-full border border-white/20" style={{ background: color }} />
-                  {color}
-                  <button type="button" onClick={() => removeColor(color)} className="text-white/40 hover:text-white">
-                    <X size={12} />
-                  </button>
-                </span>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {PRESET_COLORS.map((color) => (
+                <button
+                  key={color.name}
+                  type="button"
+                  onClick={() => toggleColor(color.name)}
+                  className={`w-8 h-8 rounded-full border-2 transition-all ${
+                    selectedColors.includes(color.name)
+                      ? 'border-[#C9B99A] shadow-[0_0_0_2px_#C9B99A]'
+                      : 'border-[#2A2A2A]'
+                  }`}
+                  style={{ background: color.hex }}
+                  title={color.name}
+                />
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <input
                 type="text"
-                value={colorInput}
-                onChange={(e) => setColorInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addColor())}
-                placeholder="Add color..."
+                value={customColor}
+                onChange={(e) => setCustomColor(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomColor())}
+                placeholder="Custom color name..."
                 className="flex-1 h-10 bg-[#0A0A0A] border border-[#222] rounded-lg px-3 text-white font-inter text-sm focus:border-[#C9B99A] focus:outline-none"
               />
-              <button type="button" onClick={addColor} className="h-10 px-4 bg-[#1A1A1A] border border-[#222] rounded-lg text-white font-inter text-sm hover:border-[#C9B99A]">
+              <button
+                type="button"
+                onClick={addCustomColor}
+                className="h-10 px-4 border border-[#C9B99A] text-[#C9B99A] bg-transparent rounded-lg font-inter text-sm hover:bg-[#C9B99A] hover:text-black transition-colors"
+              >
                 Add
               </button>
             </div>
+            {selectedColors.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {selectedColors.map((color) => {
+                  const preset = PRESET_COLORS.find(c => c.name === color);
+                  return (
+                    <span key={color} className="flex items-center gap-1.5 bg-[#2A2A2A] px-2.5 py-1 rounded text-white text-[13px] font-inter">
+                      {preset ? (
+                        <span className="w-4 h-4 rounded-full border border-white/20" style={{ background: preset.hex }} />
+                      ) : (
+                        <span className="w-4 h-4 rounded-full border border-white/20 bg-gradient-to-br from-pink-500 to-purple-500" />
+                      )}
+                      {color}
+                      <button type="button" onClick={() => removeColor(color)} className="text-white/40 hover:text-white ml-1">
+                        <X size={12} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Toggles */}
           <div className="flex gap-6">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -421,7 +498,6 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
             </label>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={loading || uploading}

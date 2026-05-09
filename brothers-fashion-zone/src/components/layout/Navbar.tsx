@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
 
 const NAV_LINKS = [
   { label: 'Men', href: '/category/men', megamenu: ['Kurtas', 'Sherwani', 'Blazers', 'Kurtas', 'Nehru Jackets', 'Pajamas'] },
@@ -42,7 +43,18 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const navbarRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    supabase.from('store_settings')
+      .select('value')
+      .eq('key', 'logo_url')
+      .single()
+      .then(({ data }) => {
+        if (data?.value) setLogoUrl(data.value);
+      });
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 40);
@@ -87,17 +99,29 @@ export function Navbar() {
       >
         <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image
-              src="/images/brothers-logo.jpeg"
-              alt="Brother's Fashion Zone"
-              width={44}
-              height={44}
-              className="rounded-full object-cover"
-            />
-            <span className="font-display font-black text-lg uppercase tracking-wide">
-              Brother&apos;s Fashion Zone
-            </span>
-            <span className="w-[6px] h-[6px] bg-pink-500 inline-block ml-1" />
+            {logoUrl ? (
+              <Image
+                src={logoUrl}
+                alt="Brother's Fashion Zone"
+                width={120}
+                height={40}
+                style={{ objectFit: 'contain' }}
+              />
+            ) : (
+              <>
+                <Image
+                  src="/images/brothers-logo.jpeg"
+                  alt="Brother's Fashion Zone"
+                  width={44}
+                  height={44}
+                  className="rounded-full object-cover"
+                />
+                <span className="font-display font-black text-lg uppercase tracking-wide">
+                  Brother&apos;s Fashion Zone
+                </span>
+                <span className="w-[6px] h-[6px] bg-pink-500 inline-block ml-1" />
+              </>
+            )}
           </Link>
 
           <div className="hidden lg:flex items-center gap-1">

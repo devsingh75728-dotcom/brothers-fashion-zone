@@ -345,6 +345,7 @@ export default function PaymentPage() {
   const { items, getTotal, clearCart } = useCartStore();
   const [UTR, setUTR] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'cod'>('upi');
   const [showSuccess, setShowSuccess] = useState(false);
   const [mobileDeepLink] = useState(
     `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&cu=INR`
@@ -444,6 +445,72 @@ export default function PaymentPage() {
         <div className="max-w-xl mx-auto">
           <StepIndicator current={3} />
 
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+            <div
+              onClick={() => setPaymentMethod('upi')}
+              style={{
+                border: `2px solid ${paymentMethod === 'upi' ? '#0A0A0A' : '#E8E8E8'}`,
+                background: paymentMethod === 'upi' ? '#FFD600' : '#FFFFFF',
+                boxShadow: paymentMethod === 'upi' ? '3px 3px 0px #0A0A0A' : 'none',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                border: '2px solid #0A0A0A',
+                background: paymentMethod === 'upi' ? '#FFD600' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {paymentMethod === 'upi' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0A0A0A' }} />}
+              </div>
+              <div>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '15px', color: '#0A0A0A' }}>UPI / Online Payment</p>
+                <p style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: '#666' }}>GPay • PhonePe • Paytm • BHIM</p>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setPaymentMethod('cod')}
+              style={{
+                border: `2px solid ${paymentMethod === 'cod' ? '#0A0A0A' : '#E8E8E8'}`,
+                background: paymentMethod === 'cod' ? '#39FF14' : '#FFFFFF',
+                boxShadow: paymentMethod === 'cod' ? '3px 3px 0px #0A0A0A' : 'none',
+                padding: '16px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                border: '2px solid #0A0A0A',
+                background: paymentMethod === 'cod' ? '#39FF14' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                {paymentMethod === 'cod' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0A0A0A' }} />}
+              </div>
+              <div>
+                <p style={{ fontFamily: 'Space Grotesk', fontWeight: 700, fontSize: '15px', color: '#0A0A0A' }}>Cash on Delivery (COD)</p>
+                <p style={{ fontFamily: 'JetBrains Mono', fontSize: '11px', color: '#666' }}>Pay when your order arrives</p>
+              </div>
+            </div>
+          </div>
+
+          {paymentMethod === 'upi' && (
+          <>
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -510,6 +577,40 @@ export default function PaymentPage() {
               </button>
             </div>
           </div>
+          </>
+          )}
+
+          {paymentMethod === 'cod' && (
+            <div style={{ background: '#F0FDF4', border: '2px solid #16A34A', boxShadow: '4px 4px 0px #16A34A', padding: '24px', textAlign: 'center', marginTop: '24px' }}>
+              <div style={{ fontSize: '48px' }}>✅</div>
+              <p style={{ fontFamily: 'Space Grotesk', fontWeight: 900, fontSize: '20px', color: '#16A34A', marginTop: '8px' }}>Cash on Delivery Selected</p>
+              <p style={{ fontFamily: 'JetBrains Mono', fontSize: '14px', color: '#666', marginTop: '8px' }}>Pay ₹{total.toLocaleString('en-IN')} to the delivery partner</p>
+              <p style={{ fontFamily: 'JetBrains Mono', fontSize: '12px', color: '#999', marginTop: '4px' }}>Estimated delivery: 3-5 business days</p>
+              
+              <button
+                onClick={async () => {
+                  const checkout = JSON.parse(localStorage.getItem('bfz_checkout') || '{}');
+                  const orderNumber = `BFZ-${Date.now().toString().slice(-6)}`;
+                  
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.setItem('order-number', orderNumber);
+                    localStorage.setItem('bfz_last_order', JSON.stringify({
+                      orderNumber,
+                      amount: total,
+                      items: items.length,
+                      date: new Date().toISOString(),
+                    }));
+                  }
+                  
+                  clearCart();
+                  window.location.href = `/order-confirmation?order=${orderNumber}`;
+                }}
+                style={{ width: '100%', height: '56px', background: '#16A34A', color: 'white', border: '2px solid #0A0A0A', boxShadow: '4px 4px 0px #0A0A0A', fontFamily: 'Space Grotesk', fontWeight: 900, fontSize: '16px', textTransform: 'uppercase', marginTop: '20px', cursor: 'pointer' }}
+              >
+                CONFIRM ORDER
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

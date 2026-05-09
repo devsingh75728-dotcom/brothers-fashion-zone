@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { supabase } from '@/lib/supabase';
 
-const TABS = ['store_info', 'payment', 'shipping', 'social', 'admin_access'];
+const TABS = ['store_info', 'logo', 'payment', 'shipping', 'social', 'admin_access'];
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('store_info');
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchSettings();
@@ -36,6 +39,45 @@ export default function AdminSettingsPage() {
       toast.error('Failed to save');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setLogoUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('site-assets')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type,
+        });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('site-assets')
+        .getPublicUrl(uploadData.path);
+      
+      await supabase.from('store_settings').upsert({ 
+        key: 'logo_url', 
+        value: publicUrl, 
+        updated_at: new Date().toISOString() 
+      });
+      
+      setSettings({ ...settings, logo_url: publicUrl });
+      toast.success('Logo updated!');
+    } catch (err: any) {
+      console.error('Logo upload error:', err);
+      toast.error(err.message || 'Failed to upload logo');
+    } finally {
+      setLogoUploading(false);
     }
   };
 
@@ -96,6 +138,48 @@ export default function AdminSettingsPage() {
             >
               {loading ? 'Saving...' : 'Save Changes'}
             </button>
+          </div>
+        )}
+
+        {activeTab === 'logo' && (
+          <div className="max-w-lg">
+            <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-4 font-inter">
+              WEBSITE LOGO
+            </label>
+            
+            <div className="bg-[#0A0A0A] border border-[#2A2A2A] rounded-xl p-6 text-center">
+              {settings.logo_url ? (
+                <div className="relative w-[240px] h-[100px] mx-auto bg-[#0A0A0A] rounded-lg overflow-hidden">
+                  <Image
+                    src={settings.logo_url}
+                    alt="Current logo"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-[240px] h-[100px] mx-auto bg-[#0A0A0A] border border-[#2A2A2A] rounded-lg flex items-center justify-center">
+                  <span className="text-white/40 font-inter text-sm">No logo uploaded</span>
+                </div>
+              )}
+              
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/png,image/svg+xml,image/jpeg,image/webp"
+                onChange={handleLogoUpload}
+                className="hidden"
+              />
+              
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={logoUploading}
+                className="mt-4 px-4 py-2 border border-[#C9B99A] text-[#C9B99A] bg-transparent rounded-lg font-inter text-sm hover:bg-[#C9B99A] hover:text-black transition-colors disabled:opacity-50"
+              >
+                {logoUploading ? 'Uploading...' : 'Change Logo'}
+              </button>
+            </div>
           </div>
         )}
 
