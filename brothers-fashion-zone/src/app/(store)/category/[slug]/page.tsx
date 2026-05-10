@@ -6,7 +6,6 @@ import { motion } from 'framer-motion';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useProducts } from '@/hooks/useProducts';
-import { products } from '@/data/products';
 
 const CATEGORY_COLORS: Record<string, string> = {
   men: '#6B5CE7',

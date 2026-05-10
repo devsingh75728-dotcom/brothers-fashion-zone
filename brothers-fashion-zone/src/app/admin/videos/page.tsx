@@ -19,7 +19,10 @@ export default function AdminVideosPage() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInstagramModal, setShowInstagramModal] = useState(false);
+  const [showYouTubeModal, setShowYouTubeModal] = useState(false);
   const [instagramUrl, setInstagramUrl] = useState('');
+  const [youTubeUrl, setYouTubeUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const fetchVideos = async () => {
@@ -54,6 +57,42 @@ export default function AdminVideosPage() {
       toast.success('Instagram video imported!');
       setInstagramUrl('');
       setShowInstagramModal(false);
+      fetchVideos();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to import video');
+    }
+  };
+
+  const getYouTubeId = (url: string): string | null => {
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)/);
+    return match ? match[1] : null;
+  };
+
+  const handleYouTubeImport = async () => {
+    if (!youTubeUrl.trim()) {
+      toast.error('Please enter a YouTube URL');
+      return;
+    }
+
+    const videoId = getYouTubeId(youTubeUrl);
+    if (!videoId) {
+      toast.error('Invalid YouTube URL');
+      return;
+    }
+
+    try {
+      await addVideo({
+        title: videoTitle || 'YouTube Video',
+        url: youTubeUrl,
+        youtubeId: videoId,
+        type: 'youtube_embed',
+        section: 'homepage_strip',
+      });
+      
+      toast.success('YouTube video imported!');
+      setYouTubeUrl('');
+      setVideoTitle('');
+      setShowYouTubeModal(false);
       fetchVideos();
     } catch (err: any) {
       toast.error(err.message || 'Failed to import video');
@@ -108,11 +147,18 @@ export default function AdminVideosPage() {
 
         <div className="flex gap-3">
           <button 
+            onClick={() => setShowYouTubeModal(true)}
+            className="flex items-center gap-2 h-10 px-4 bg-[#FF0000] text-white rounded-lg font-inter text-[13px] hover:opacity-90 transition-opacity"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            YouTube
+          </button>
+          <button 
             onClick={() => setShowInstagramModal(true)}
             className="flex items-center gap-2 h-10 px-4 bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white rounded-lg font-inter text-[13px] hover:opacity-90 transition-opacity"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-            Import from Instagram
+            Instagram
           </button>
           <label className="flex items-center gap-2 h-10 px-4 bg-[#C9B99A] text-[#0A0A0A] rounded-lg font-inter text-[14px] font-semibold cursor-pointer hover:bg-[#B8A88A] transition-colors">
             <Upload size={14} />
@@ -187,7 +233,7 @@ export default function AdminVideosPage() {
         </div>
       )}
 
-      {/* Instagram Import Modal */}
+{/* Instagram Import Modal */}
       {showInstagramModal && (
         <div className="fixed inset-0 z-50">
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowInstagramModal(false)} />
@@ -207,7 +253,7 @@ export default function AdminVideosPage() {
                 placeholder="https://www.instagram.com/reel/..."
                 className="w-full h-12 bg-[#0A0A0A] border border-[#222] rounded-lg px-4 text-white font-inter text-sm focus:border-[#C9B99A] focus:outline-none"
               />
-              
+               
               <p className="text-white/40 font-mono text-[12px]">
                 Enter your Instagram post/reel URL. We&apos;ll embed it on your homepage.
               </p>
@@ -217,6 +263,55 @@ export default function AdminVideosPage() {
                 className="w-full h-12 bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white font-inter font-semibold rounded-lg hover:opacity-90 transition-opacity"
               >
                 Import Video
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* YouTube Import Modal */}
+      {showYouTubeModal && (
+        <div className="fixed inset-0 z-50">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowYouTubeModal(false)} />
+          <div className="fixed right-0 top-0 h-full w-full max-w-md bg-[#111111] border-l border-[#1A1A1A] p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-white font-display text-xl">Add YouTube Video</h2>
+              <button onClick={() => setShowYouTubeModal(false)} className="w-9 h-9 bg-[#1A1A1A] rounded-lg flex items-center justify-center">
+                <X size={16} className="text-white" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2">Video Title</label>
+                <input
+                  type="text"
+                  value={videoTitle}
+                  onChange={(e) => setVideoTitle(e.target.value)}
+                  placeholder="e.g. New Collection Launch"
+                  className="w-full h-12 bg-[#0A0A0A] border border-[#222] rounded-lg px-4 text-white font-inter text-sm focus:border-[#C9B99A] focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[12px] text-white/50 uppercase tracking-wider mb-2">YouTube URL *</label>
+                <input
+                  type="url"
+                  value={youTubeUrl}
+                  onChange={(e) => setYouTubeUrl(e.target.value)}
+                  placeholder="https://youtube.com/watch?v=..."
+                  className="w-full h-12 bg-[#0A0A0A] border border-[#222] rounded-lg px-4 text-white font-inter text-sm focus:border-[#C9B99A] focus:outline-none"
+                />
+              </div>
+               
+              <p className="text-white/40 font-mono text-[12px]">
+                Paste your YouTube video link. It will be embedded on your homepage.
+              </p>
+
+              <button
+                onClick={handleYouTubeImport}
+                className="w-full h-12 bg-[#FF0000] text-white font-inter font-semibold rounded-lg hover:opacity-90 transition-opacity"
+              >
+                Add YouTube Video
               </button>
             </div>
           </div>

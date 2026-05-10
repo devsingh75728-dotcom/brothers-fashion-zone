@@ -15,7 +15,6 @@ import confetti from 'canvas-confetti';
 import { useCartStore, CartItem } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
 import { getProductBySlug } from '@/lib/db';
-import { products as localProducts } from '@/data/products';
 
 interface ProductData {
   id: string;
@@ -58,29 +57,7 @@ export default function ProductPage() {
         const data = await getProductBySlug(slug);
 
         if (!data) {
-          // Fall back to local data
-          const localProduct = localProducts.find(p => p.slug === slug);
-          if (localProduct) {
-            setProduct({
-              id: localProduct.id,
-              name: localProduct.name,
-              slug: localProduct.slug,
-              description: localProduct.description,
-              price: localProduct.price,
-              original_price: localProduct.originalPrice || 0,
-              category: localProduct.category,
-              subcategory: localProduct.subcategory || '',
-              images: localProduct.images,
-              colors: localProduct.colors || [],
-              tags: localProduct.tags || [],
-              is_active: true,
-              is_featured: localProduct.featured || false,
-              total_stock: localProduct.variants?.reduce((sum, v) => sum + v.stock, 0) || 10,
-              discount_pct: localProduct.originalPrice ? Math.round(((localProduct.originalPrice - localProduct.price) / localProduct.originalPrice) * 100) : 0,
-            });
-          } else {
-            setProduct(null);
-          }
+          setProduct(null);
         } else {
           const productData = data as any;
           setProduct({
@@ -102,29 +79,8 @@ export default function ProductPage() {
           } as ProductData);
         }
       } catch (err) {
-        console.warn('Error fetching from Firebase, trying local:', err);
-        const localProduct = localProducts.find(p => p.slug === slug);
-        if (localProduct) {
-          setProduct({
-            id: localProduct.id,
-            name: localProduct.name,
-            slug: localProduct.slug,
-            description: localProduct.description,
-            price: localProduct.price,
-            original_price: localProduct.originalPrice || 0,
-            category: localProduct.category,
-            subcategory: localProduct.subcategory || '',
-            images: localProduct.images,
-            colors: localProduct.colors || [],
-            tags: localProduct.tags || [],
-            is_active: true,
-            is_featured: localProduct.featured || false,
-            total_stock: localProduct.variants?.reduce((sum, v) => sum + v.stock, 0) || 10,
-            discount_pct: localProduct.originalPrice ? Math.round(((localProduct.originalPrice - localProduct.price) / localProduct.originalPrice) * 100) : 0,
-          });
-        } else {
-          setProduct(null);
-        }
+        console.warn('Error fetching from Firebase:', err);
+        setProduct(null);
       } finally {
         setLoading(false);
       }

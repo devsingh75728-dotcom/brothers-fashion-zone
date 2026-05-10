@@ -61,6 +61,8 @@ export default function NewProductPage() {
   const [sizeStock, setSizeStock] = useState<{size: string, stock: number}[]>(
     SIZE_OPTIONS['clothing_men'].map(s => ({ size: s, stock: 0 }))
   );
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isActive, setIsActive] = useState(true);
 
   const generateSlug = (productName: string) => {
     return productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -145,8 +147,8 @@ export default function NewProductPage() {
         colors: selectedColors,
         tags: [],
         totalStock,
-        isActive: true,
-        isFeatured: false,
+        isActive,
+        isFeatured,
       });
 
       toast.success('Product saved!');
@@ -231,6 +233,34 @@ export default function NewProductPage() {
                 rows={3}
                 className="w-full bg-[#0A0A0A] border border-[#222] rounded-lg p-4 text-white focus:border-[#C9B99A] focus:outline-none resize-none"
               />
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div 
+                  className={`w-12 h-6 rounded-full transition-colors ${isFeatured ? 'bg-[#C9B99A]' : 'bg-[#222]'}`}
+                  onClick={() => setIsFeatured(!isFeatured)}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${isFeatured ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                </div>
+                <div>
+                  <span className="text-white font-inter text-[14px]">Featured Product</span>
+                  <span className="text-white/40 text-[12px] block">Show on homepage "Just Dropped" section</span>
+                </div>
+              </label>
+
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div 
+                  className={`w-12 h-6 rounded-full transition-colors ${isActive ? 'bg-[#39FF14]' : 'bg-[#DC2626]'}`}
+                  onClick={() => setIsActive(!isActive)}
+                >
+                  <div className={`w-5 h-5 bg-white rounded-full mt-0.5 transition-transform ${isActive ? 'translate-x-6' : 'translate-x-0.5'}`} />
+                </div>
+                <div>
+                  <span className="text-white font-inter text-[14px]">Active</span>
+                  <span className="text-white/40 text-[12px] block">Product visible in store</span>
+                </div>
+              </label>
             </div>
           </div>
 

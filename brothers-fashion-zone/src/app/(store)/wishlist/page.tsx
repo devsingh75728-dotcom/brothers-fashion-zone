@@ -1,15 +1,25 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, ShoppingBag, Heart, Trash2 } from 'lucide-react';
 import { STORE } from '@/lib/constants';
 import { useWishlistStore } from '@/store/wishlistStore';
-import { products } from '@/data/products';
+import { getProducts } from '@/lib/db';
 
 export default function WishlistPage() {
   const { productIds, removeFromWishlist } = useWishlistStore();
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const wishlistProducts = products.filter((p) => productIds.includes(p.id));
+  useEffect(() => {
+    getProducts().then((data) => {
+      setAllProducts(data as any[]);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, []);
+
+  const wishlistProducts = allProducts.filter((p) => productIds.includes(p.id));
 
   return (
     <main className="min-h-screen bg-bg">

@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getProducts } from '@/lib/db';
 import { Product } from '@/types/product';
-import { products as localProducts } from '@/data/products';
 
 export interface ProductFilters {
   category: string[];
@@ -54,12 +53,12 @@ export function useProducts(options: UseProductsOptions = {}) {
         setProducts(mappedProducts);
         setUsingLocalData(false);
       } else {
-        setProducts(localProducts as Product[]);
+        setProducts([]);
         setUsingLocalData(true);
       }
     } catch (err) {
-      console.warn('Error fetching from Firebase, using local data:', err);
-      setProducts(localProducts as Product[]);
+      console.warn('Error fetching from Firebase:', err);
+      setProducts([]);
       setUsingLocalData(true);
     } finally {
       setLoading(false);

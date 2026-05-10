@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { ProductCard } from '@/components/ui/ProductCard';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
-import { products } from '@/data/products';
+import { getProducts } from '@/lib/db';
 
 interface RecentlyViewedProps {
   currentSlug: string;
@@ -13,10 +13,15 @@ interface RecentlyViewedProps {
 
 export function RecentlyViewed({ currentSlug }: RecentlyViewedProps) {
   const { recentlyViewed } = useRecentlyViewed();
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    getProducts().then((data) => setAllProducts(data as any[]));
+  }, []);
 
   const viewedProducts = recentlyViewed
     .filter((slug) => slug !== currentSlug)
-    .map((slug) => products.find((p) => p.slug === slug))
+    .map((slug) => allProducts.find((p) => p.slug === slug))
     .filter(Boolean)
     .slice(0, 6);
 
