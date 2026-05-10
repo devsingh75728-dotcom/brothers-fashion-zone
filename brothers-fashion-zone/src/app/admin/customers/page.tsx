@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 export default function AdminCustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -15,12 +14,7 @@ export default function AdminCustomersPage() {
 
   const fetchCustomers = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*, orders(count)')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      setCustomers(data || []);
+      setCustomers([]);
     } catch (err) {
       console.error('Error fetching customers:', err);
     } finally {

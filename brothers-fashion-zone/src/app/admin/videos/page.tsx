@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Video, Upload, Plus, X, Play, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase } from '@/lib/supabase';
+import { getVideos, deleteVideo, addVideo } from '@/lib/db';
+import { uploadImage } from '@/lib/uploadImage';
 
 interface VideoItem {
   id: string;
@@ -12,7 +13,6 @@ interface VideoItem {
   type: string;
   section: string;
   thumbnail?: string;
-  created_at: string;
 }
 
 export default function AdminVideosPage() {
@@ -24,16 +24,8 @@ export default function AdminVideosPage() {
 
   const fetchVideos = async () => {
     try {
-      const { data, error } = await supabase
-        .from('store_videos')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setVideos([]);
-        return;
-      }
-      setVideos(data || []);
+      const data = await getVideos();
+      setVideos(data as VideoItem[]);
     } catch (err) {
       console.warn('Could not load videos');
       setVideos([]);
@@ -53,15 +45,11 @@ export default function AdminVideosPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('store_videos')
-        .insert({
-          url: instagramUrl,
-          type: 'instagram_embed',
-          section: 'homepage_strip',
-        });
-
-      if (error) throw error;
+      await addVideo({
+        url: instagramUrl,
+        type: 'instagram_embed',
+        section: 'homepage_strip',
+      });
       
       toast.success('Instagram video imported!');
       setInstagramUrl('');
@@ -80,27 +68,12 @@ export default function AdminVideosPage() {
 
     try {
       for (const file of files) {
-        const fileName = `${Date.now()}-${file.name}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('videos')
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('videos')
-          .getPublicUrl(fileName);
-
-        const { error: insertError } = await supabase
-          .from('store_videos')
-          .insert({
-            url: publicUrl,
-            type: 'upload',
-            section: 'homepage_strip',
-          });
-
-        if (insertError) throw insertError;
+        const url = await uploadImage(file, 'videos');
+        await addVideo({
+          url,
+          type: 'upload',
+          section: 'homepage_strip',
+        });
       }
 
       toast.success('Video uploaded successfully!');
@@ -112,11 +85,11 @@ export default function AdminVideosPage() {
     }
   };
 
-  const deleteVideo = async (id: string) => {
+  const handleDeleteVideo = async (id: string) => {
     if (!confirm('Delete this video?')) return;
     
     try {
-      await supabase.from('store_videos').delete().eq('id', id);
+      await deleteVideo(id);
       setVideos(videos.filter(v => v.id !== id));
       toast.success('Video deleted');
     } catch (err) {
@@ -203,7 +176,7 @@ export default function AdminVideosPage() {
                   <p className="text-white/40 font-inter text-[11px] mt-1">{video.section}</p>
                 </div>
                 <button 
-                  onClick={() => deleteVideo(video.id)}
+                  onClick={() => handleDeleteVideo(video.id)}
                   className="w-8 h-8 flex items-center justify-center rounded border border-[#222] text-white/40 hover:text-[#DC2626] hover:border-[#DC2626] transition-colors"
                 >
                   <Trash2 size={14} />

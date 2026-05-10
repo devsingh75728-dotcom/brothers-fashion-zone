@@ -3,7 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { X, UploadCloud, Plus, Trash2, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { uploadImage } from '@/lib/uploadImage';
+import { addProduct, updateProduct } from '@/lib/db';
 import toast from 'react-hot-toast';
 
 interface ProductFormModalProps {
@@ -49,23 +50,6 @@ const PRESET_COLORS = [
   { name: 'Cream', hex: '#F5F0E8' },
   { name: 'Navy', hex: '#1B2A4A' },
 ];
-
-const uploadImage = async (file: File): Promise<string> => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-  const { data, error } = await supabase.storage
-    .from('product-images')
-    .upload(fileName, file, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: file.type,
-    });
-  if (error) throw new Error(error.message);
-  const { data: { publicUrl } } = supabase.storage
-    .from('product-images')
-    .getPublicUrl(data.path);
-  return publicUrl;
-};
 
 export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: ProductFormModalProps) {
   const [loading, setLoading] = useState(false);
@@ -210,19 +194,10 @@ export function ProductFormModal({ isOpen, onClose, onSuccess, editProduct }: Pr
       };
 
       if (editProduct?.id) {
-        const { error } = await supabase
-          .from('products')
-          .update(productData)
-          .eq('id', editProduct.id);
-        
-        if (error) throw error;
+        await updateProduct(editProduct.id, productData);
         toast.success('Product updated!');
       } else {
-        const { error } = await supabase
-          .from('products')
-          .insert(productData);
-        
-        if (error) throw error;
+        await addProduct(productData);
         toast.success('Product added successfully!');
       }
 

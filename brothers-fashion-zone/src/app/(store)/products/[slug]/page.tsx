@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { useCartStore, CartItem } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
-import { supabase } from '@/lib/supabase';
+import { getProductBySlug } from '@/lib/db';
 import { products as localProducts } from '@/data/products';
 
 interface ProductData {
@@ -55,13 +55,9 @@ export default function ProductPage() {
       if (!slug) return;
       
       try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('slug', slug)
-          .single();
+        const data = await getProductBySlug(slug);
 
-        if (error || !data) {
+        if (!data) {
           // Fall back to local data
           const localProduct = localProducts.find(p => p.slug === slug);
           if (localProduct) {
@@ -86,11 +82,27 @@ export default function ProductPage() {
             setProduct(null);
           }
         } else {
-          setProduct(data as ProductData);
+          const productData = data as any;
+          setProduct({
+            id: productData.id,
+            name: productData.name || '',
+            slug: productData.slug || '',
+            description: productData.description || '',
+            price: productData.price || 0,
+            original_price: productData.originalPrice || 0,
+            category: productData.category || '',
+            subcategory: productData.subcategory || '',
+            images: productData.images || [],
+            colors: productData.colors || [],
+            tags: productData.tags || [],
+            is_active: productData.isActive || true,
+            is_featured: productData.isFeatured || false,
+            total_stock: productData.totalStock || 0,
+            discount_pct: productData.discountPct || 0,
+          } as ProductData);
         }
       } catch (err) {
-        console.warn('Error fetching from Supabase, trying local:', err);
-        // Fall back to local data
+        console.warn('Error fetching from Firebase, trying local:', err);
         const localProduct = localProducts.find(p => p.slug === slug);
         if (localProduct) {
           setProduct({

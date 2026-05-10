@@ -8,8 +8,6 @@ import { Search, Heart, ShoppingBag, User, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/lib/supabase';
 
 const NAV_LINKS = [
   { label: 'Men', href: '/category/men', megamenu: ['Kurtas', 'Sherwani', 'Blazers', 'Kurtas', 'Nehru Jackets', 'Pajamas'] },
@@ -37,23 +35,17 @@ export function Navbar() {
   const pathname = usePathname();
   const { getItemCount } = useCartStore();
   const { productIds } = useWishlistStore();
-  const { user, initials } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrl] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const navbarRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    supabase.from('store_settings')
-      .select('value')
-      .eq('key', 'logo_url')
-      .single()
-      .then(({ data }) => {
-        if (data?.value) setLogoUrl(data.value);
-      });
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -205,7 +197,7 @@ export function Navbar() {
               aria-label="Wishlist"
             >
               <Heart size={18} />
-              {wishlistCount > 0 && (
+              {mounted && wishlistCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-white text-[10px] font-inter flex items-center justify-center border border-black">
                   {wishlistCount}
                 </span>
@@ -218,7 +210,7 @@ export function Navbar() {
               aria-label="Cart"
             >
               <ShoppingBag size={18} />
-              {cartCount > 0 && (
+              {mounted && cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-pink-500 text-white text-[10px] font-inter flex items-center justify-center border border-black">
                   {cartCount}
                 </span>
@@ -226,17 +218,11 @@ export function Navbar() {
             </Link>
 
             <Link
-              href={user ? '/account' : '/auth/login'}
+              href="/auth/login"
               className="w-10 h-10 flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#0A0A0A] hover:bg-yellow-400 transition-colors"
               aria-label="Account"
             >
-              {user ? (
-                <div className="w-6 h-6 rounded-full bg-amber-300 flex items-center justify-center text-[10px] font-inter font-bold">
-                  {initials || <User size={16} />}
-                </div>
-              ) : (
-                <User size={18} />
-              )}
+              <User size={18} />
             </Link>
 
             <button

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { addContactMessage } from '@/lib/db';
 import { FloatingInput } from '@/components/ui/FloatingInput';
 import toast from 'react-hot-toast';
 
@@ -21,7 +21,7 @@ export default function ContactPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await supabase.from('contact_messages').insert({
+      await addContactMessage({
         name: formData.name,
         email: formData.email,
         phone: formData.phone || null,

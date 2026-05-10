@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getProducts } from '@/lib/db';
 import { Product } from '@/types/product';
 import { products as localProducts } from '@/data/products';
 
@@ -17,29 +17,6 @@ interface UseProductsOptions {
   category?: string;
 }
 
-function mapDbProductToProduct(row: Record<string, unknown>): Product {
-  return {
-    id: (row.id as string) || '',
-    name: (row.name as string) || '',
-    slug: (row.slug as string) || '',
-    description: (row.description as string) || '',
-    price: (row.price as number) || 0,
-    originalPrice: (row.original_price as number) || undefined,
-    category: (row.category as string) || '',
-    subcategory: (row.subcategory as string) || undefined,
-    images: Array.isArray(row.images) ? row.images as string[] : [],
-    variants: Array.isArray(row.variants) ? row.variants as Product['variants'] : [],
-    colors: Array.isArray(row.colors) ? row.colors as string[] : [],
-    material: (row.material as string) || undefined,
-    fit: (row.fit as string) || undefined,
-    tags: Array.isArray(row.tags) ? row.tags as string[] : [],
-    featured: (row.is_featured as boolean) || false,
-    onSale: ((row.original_price as number) || 0) > (row.price as number),
-    createdAt: (row.created_at as string) || new Date().toISOString(),
-    updatedAt: (row.updated_at as string) || new Date().toISOString(),
-  };
-}
-
 export function useProducts(options: UseProductsOptions = {}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,35 +28,37 @@ export function useProducts(options: UseProductsOptions = {}) {
       setLoading(true);
       setError(null);
 
-      // Try Supabase first
-      const { data, error: fetchError } = await supabase
-        .from('products')
-        .select('*')
-        .eq('is_active', true)
-        .limit(50);
-
-      if (fetchError) {
-        console.warn('Supabase error, falling back to local data:', fetchError.message);
-        // Fall back to local data
-        setProducts(localProducts as Product[]);
-        setUsingLocalData(true);
-        setLoading(false);
-        return;
-      }
+      const data = await getProducts(options.category);
 
       if (data && data.length > 0) {
-        const mappedProducts = data.map(mapDbProductToProduct);
+        const mappedProducts = data.map((p: any) => ({
+          id: p.id || '',
+          name: p.name || '',
+          slug: p.slug || '',
+          description: p.description || '',
+          price: p.price || 0,
+          originalPrice: p.originalPrice,
+          category: p.category || '',
+          subcategory: p.subcategory,
+          images: p.images || [],
+          variants: p.variants || [],
+          colors: p.colors || [],
+          material: p.material,
+          fit: p.fit,
+          tags: p.tags || [],
+          featured: p.isFeatured || false,
+          onSale: (p.originalPrice || 0) > p.price,
+          createdAt: p.createdAt ? new Date(p.createdAt.seconds * 1000).toISOString() : new Date().toISOString(),
+          updatedAt: p.updatedAt ? new Date(p.updatedAt.seconds * 1000).toISOString() : new Date().toISOString(),
+        }));
         setProducts(mappedProducts);
         setUsingLocalData(false);
       } else {
-        // No products in DB, use local
-        console.warn('No products in database, using local data');
         setProducts(localProducts as Product[]);
         setUsingLocalData(true);
       }
     } catch (err) {
-      console.warn('Error fetching from Supabase, using local data:', err);
-      // Fall back to local data on any error
+      console.warn('Error fetching from Firebase, using local data:', err);
       setProducts(localProducts as Product[]);
       setUsingLocalData(true);
     } finally {

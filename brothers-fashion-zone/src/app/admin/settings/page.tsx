@@ -3,37 +3,43 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
-import { supabase } from '@/lib/supabase';
+import { uploadImage } from '@/lib/uploadImage';
 
 const TABS = ['store_info', 'logo', 'payment', 'shipping', 'social', 'admin_access'];
 
+const DEFAULT_SETTINGS = {
+  store_name: "Brother's Fashion Zone",
+  owner_email: 'brotherfashion@gmail.com',
+  phone: '+91 81410 01555',
+  logo_url: '',
+  upi_id: 'ashokpatela119-1@oksbi',
+  upi_name: 'Ashok Ashokpatel',
+  free_delivery_threshold: '599',
+  delivery_charge: '49',
+  delivery_days: '3–5 business days',
+  whatsapp_number: '+91 81410 01555',
+};
+
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState('store_info');
-  const [settings, setSettings] = useState<Record<string, string>>({});
+  const [settings, setSettings] = useState<Record<string, string>>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    try {
-      const { data } = await supabase.from('store_settings').select('*');
-      const map: Record<string, string> = {};
-      data?.forEach((s: any) => { map[s.key] = s.value; });
-      setSettings(map);
-    } catch (err) {
-      console.error('Error fetching settings:', err);
+    const saved = localStorage.getItem('bfz_settings');
+    if (saved) {
+      setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
     }
-  };
+  }, []);
 
   const saveSetting = async (key: string, value: string) => {
     setLoading(true);
     try {
-      await supabase.from('store_settings').upsert({ key, value, updated_at: new Date().toISOString() });
-      setSettings({ ...settings, [key]: value });
+      const newSettings = { ...settings, [key]: value };
+      setSettings(newSettings);
+      localStorage.setItem('bfz_settings', JSON.stringify(newSettings));
       toast.success('Setting saved!');
     } catch (err) {
       toast.error('Failed to save');
@@ -48,30 +54,12 @@ export default function AdminSettingsPage() {
     
     setLogoUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const url = await uploadImage(file, 'logo');
       
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('site-assets')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: file.type,
-        });
+      const newSettings = { ...settings, logo_url: url };
+      setSettings(newSettings);
+      localStorage.setItem('bfz_settings', JSON.stringify(newSettings));
       
-      if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('site-assets')
-        .getPublicUrl(uploadData.path);
-      
-      await supabase.from('store_settings').upsert({ 
-        key: 'logo_url', 
-        value: publicUrl, 
-        updated_at: new Date().toISOString() 
-      });
-      
-      setSettings({ ...settings, logo_url: publicUrl });
       toast.success('Logo updated!');
     } catch (err: any) {
       console.error('Logo upload error:', err);

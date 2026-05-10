@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, ShoppingBag, Package, Tag, Video, 
-  Users, MessageCircle, Percent, Settings, LogOut, Grid3X3, Image 
+  Users, MessageCircle, Percent, Settings, LogOut, Grid3X3, Image, Clapperboard 
 } from 'lucide-react';
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { href: '/admin/banners', icon: Image, label: 'Banners' },
   { href: '/admin/brands', icon: Tag, label: 'Brands' },
   { href: '/admin/videos', icon: Video, label: 'Videos' },
+  { href: '/admin/reels', icon: Clapperboard, label: 'Reels/Instagram' },
   { href: '/admin/customers', icon: Users, label: 'Customers' },
   { href: '/admin/messages', icon: MessageCircle, label: 'Messages' },
   { href: '/admin/coupons', icon: Percent, label: 'Coupons' },

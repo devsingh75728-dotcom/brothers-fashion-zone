@@ -10,7 +10,6 @@ import { RangeSlider } from '@/components/ui/RangeSlider';
 import { FilterChip } from '@/components/ui/FilterChip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useProducts, ProductFilters } from '@/hooks/useProducts';
-import { products as allProducts } from '@/data/products';
 
 const CATEGORIES = ['Men', 'Women', 'Kids', 'Footwear', 'Watches', 'Bags', 'Accessories', 'Sale'];
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'UK 6', 'UK 7', 'UK 8', 'UK 9', 'UK 10'];

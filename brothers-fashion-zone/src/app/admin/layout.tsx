@@ -4,14 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
 import { AdminTopbar } from '@/components/admin/AdminTopbar';
-import { supabase } from '@/lib/supabase';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
-  const [pendingOrders, setPendingOrders] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [pendingOrders] = useState(0);
+  const [unreadMessages] = useState(0);
 
   useEffect(() => {
     if (pathname === '/admin/login') {
@@ -28,32 +27,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       setChecking(false);
     }
   }, [pathname, router]);
-
-  useEffect(() => {
-    if (checking || pathname === '/admin/login') return;
-
-    const fetchCounts = async () => {
-      try {
-        const [ordersRes, messagesRes] = await Promise.all([
-          supabase.from('orders').select('*', { count: 'exact', head: true }).eq('payment_status', 'pending'),
-          supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('is_read', false),
-        ]);
-        setPendingOrders(ordersRes.count || 0);
-        setUnreadMessages(messagesRes.count || 0);
-      } catch (err) {
-        console.warn('Could not fetch counts');
-      }
-    };
-
-    fetchCounts();
-
-    const channel = supabase.channel('admin-counts')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchCounts())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contact_messages' }, () => fetchCounts())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [checking, pathname]);
 
   if (checking && pathname !== '/admin/login') {
     return (
@@ -74,7 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-[#0A0A0A] overflow-hidden">
       <AdminSidebar pendingOrders={pendingOrders} unreadMessages={unreadMessages} />
       <AdminTopbar pendingOrders={pendingOrders} />
-      <main className="ml-0 lg:ml-[240px] mt-0 lg:mt-[64px] min-h-screen p-4 lg:p-8 pb-24 lg:pb-8">
+      <main className="ml-0 lg:ml-[240px] min-h-screen p-4 lg:p-8 pb-24 lg:pb-8">
         {children}
       </main>
       

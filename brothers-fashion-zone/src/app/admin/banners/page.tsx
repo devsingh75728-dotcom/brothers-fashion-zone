@@ -5,19 +5,20 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Plus, Pencil, Trash2, X, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { uploadImage } from '@/lib/uploadImage';
+import { getBanners, addBanner, updateBanner, deleteBanner } from '@/lib/db';
 import toast from 'react-hot-toast';
 
 interface Banner {
   id: string;
   title: string | null;
   subtitle: string | null;
-  image_url: string;
-  button_text: string | null;
-  button_link: string | null;
-  bg_color: string;
-  is_active: boolean;
-  sort_order: number;
+  imageUrl: string;
+  buttonText: string | null;
+  buttonLink: string | null;
+  bgColor: string;
+  isActive: boolean;
+  sortOrder: number;
 }
 
 const PRESET_COLORS = [
@@ -52,15 +53,11 @@ export default function AdminBannersPage() {
 
   const fetchBanners = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('banners')
-      .select('*')
-      .order('sort_order');
-    
-    if (error) {
-      console.error('Error fetching banners:', error);
-    } else {
-      setBanners(data || []);
+    try {
+      const data = await getBanners();
+      setBanners(data as Banner[]);
+    } catch {
+      setBanners([]);
     }
     setLoading(false);
   };
@@ -84,11 +81,11 @@ export default function AdminBannersPage() {
       setFormData({
         title: banner.title || '',
         subtitle: banner.subtitle || '',
-        image_url: banner.image_url,
-        button_text: banner.button_text || '',
-        button_link: banner.button_link || '',
-        bg_color: banner.bg_color,
-        is_active: banner.is_active,
+        image_url: banner.imageUrl || '',
+        button_text: banner.buttonText || '',
+        button_link: banner.buttonLink || '',
+        bg_color: banner.bgColor,
+        is_active: banner.isActive,
       });
     } else {
       resetForm();
@@ -106,24 +103,8 @@ export default function AdminBannersPage() {
     
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-      
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-          contentType: file.type,
-        });
-      
-      if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(uploadData.path);
-      
-      setFormData({ ...formData, image_url: publicUrl });
+      const url = await uploadImage(file, 'banners');
+      setFormData({ ...formData, image_url: url });
       toast.success('Image uploaded!');
     } catch (err: any) {
       console.error('Upload error:', err);
@@ -145,27 +126,18 @@ export default function AdminBannersPage() {
       const bannerData = {
         title: formData.title || null,
         subtitle: formData.subtitle || null,
-        image_url: formData.image_url,
-        button_text: formData.button_text || null,
-        button_link: formData.button_link || null,
-        bg_color: formData.bg_color,
-        is_active: formData.is_active,
+        imageUrl: formData.image_url,
+        buttonText: formData.button_text || null,
+        buttonLink: formData.button_link || null,
+        bgColor: formData.bg_color,
+        isActive: formData.is_active,
       };
 
       if (editingBanner?.id) {
-        const { error } = await supabase
-          .from('banners')
-          .update(bannerData)
-          .eq('id', editingBanner.id);
-        
-        if (error) throw error;
+        await updateBanner(editingBanner.id, bannerData);
         toast.success('Banner updated!');
       } else {
-        const { error } = await supabase
-          .from('banners')
-          .insert(bannerData);
-        
-        if (error) throw error;
+        await addBanner(bannerData);
         toast.success('Banner created!');
       }
 
@@ -177,17 +149,11 @@ export default function AdminBannersPage() {
     }
   };
 
-  const deleteBanner = async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this banner?')) return;
     
     try {
-      const { error } = await supabase
-        .from('banners')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
+      await deleteBanner(id);
       toast.success('Banner deleted!');
       fetchBanners();
     } catch (err) {
@@ -198,11 +164,7 @@ export default function AdminBannersPage() {
 
   const toggleActive = async (banner: Banner) => {
     try {
-      await supabase
-        .from('banners')
-        .update({ is_active: !banner.is_active })
-        .eq('id', banner.id);
-      
+      await updateBanner(banner.id, { isActive: !banner.isActive });
       fetchBanners();
     } catch (err) {
       console.error('Error updating banner:', err);
@@ -237,9 +199,9 @@ export default function AdminBannersPage() {
             className="flex items-center bg-[#111111] border border-[#1A1A1A] rounded-xl overflow-hidden"
           >
             <div className="w-[160px] h-[100px] relative flex-shrink-0 bg-[#0A0A0A]">
-              {banner.image_url ? (
+              {(banner as any).image_url || banner.imageUrl ? (
                 <Image
-                  src={banner.image_url}
+                  src={(banner as any).image_url || banner.imageUrl}
                   alt={banner.title || 'Banner'}
                   fill
                   className="object-cover"
@@ -256,21 +218,21 @@ export default function AdminBannersPage() {
               <div className="flex items-center gap-2 mt-2">
                 <div
                   className="w-5 h-5 rounded-full"
-                  style={{ background: banner.bg_color }}
+                  style={{ background: (banner as any).bg_color || banner.bgColor }}
                 />
-                <span className="font-mono text-[12px] text-white/60">{banner.bg_color}</span>
+                <span className="font-mono text-[12px] text-white/60">{(banner as any).bg_color || banner.bgColor}</span>
               </div>
               <div className="flex items-center gap-4 mt-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div
-                    className={`relative w-10 h-5 rounded-full transition-colors ${banner.is_active ? 'bg-[#39FF14]' : 'bg-gray-600'}`}
+                    className={`relative w-10 h-5 rounded-full transition-colors ${(banner as any).is_active || banner.isActive ? 'bg-[#39FF14]' : 'bg-gray-600'}`}
                     onClick={() => toggleActive(banner)}
                   >
                     <div
-                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${banner.is_active ? 'translate-x-5' : 'translate-x-0.5'}`}
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${(banner as any).is_active || banner.isActive ? 'translate-x-5' : 'translate-x-0.5'}`}
                     />
                   </div>
-                  <span className="text-[12px] text-white/60">{banner.is_active ? 'Active' : 'Inactive'}</span>
+                  <span className="text-[12px] text-white/60">{(banner as any).is_active || banner.isActive ? 'Active' : 'Inactive'}</span>
                 </label>
               </div>
             </div>
@@ -283,7 +245,7 @@ export default function AdminBannersPage() {
                 <Pencil size={14} className="text-white" />
               </button>
               <button
-                onClick={() => deleteBanner(banner.id)}
+                onClick={() => handleDelete(banner.id)}
                 className="w-9 h-9 flex items-center justify-center bg-[rgba(220,38,38,0.1)] rounded-lg hover:bg-[rgba(220,38,38,0.2)] transition-colors"
               >
                 <Trash2 size={14} className="text-red-500" />

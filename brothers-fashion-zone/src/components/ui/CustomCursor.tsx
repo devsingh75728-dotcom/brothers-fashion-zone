@@ -4,10 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 
 export function CustomCursor() {
   const cursorRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const posRef = useRef({ x: 0, y: 0 });
   const targetRef = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -67,6 +72,8 @@ export function CustomCursor() {
       observer.disconnect();
     };
   }, [isVisible]);
+
+  if (!mounted) return null;
 
   if (typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches) {
     return null;

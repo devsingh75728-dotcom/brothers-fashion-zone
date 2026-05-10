@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith('/account')) {
-    const authToken = request.cookies.get('supabase-auth-token');
+    const authToken = request.cookies.get('auth-token');
 
     if (!authToken) {
       const loginUrl = new URL('/auth/login', request.url);

@@ -7,8 +7,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Check, ChevronDown, ChevronUp, Copy, CheckCircle } from 'lucide-react';
 import { useCartStore, CartItem } from '@/store/cartStore';
 import { UTRInput } from '@/components/checkout/UTRInput';
+import { addOrder } from '@/lib/db';
 import gsap from 'gsap';
 import confetti from 'canvas-confetti';
+import { QRCodeSVG } from 'qrcode.react';
 
 const UPI_ID = 'ashokpatela119-1@oksbi';
 const UPI_NAME = 'Ashok Ashokpatel';
@@ -108,8 +110,10 @@ function QRCodeBlock({ amount }: { amount: number }) {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const upiUrl = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&cu=INR`;
+
   return (
-    <div className="bg-white border border-gray-200 p-6 text-center relative overflow-hidden">
+    <div className="bg-white border-2 border-[#0A0A0A] p-6 text-center relative overflow-hidden shadow-[4px_4px_0px_#0A0A0A]">
       <div
         className="absolute top-0 left-0 right-0 h-1 opacity-50"
         style={{
@@ -125,45 +129,41 @@ function QRCodeBlock({ amount }: { amount: number }) {
       `}</style>
 
       <div className="relative inline-block mb-4">
-        <div className="relative w-56 h-56 mx-auto border-2 border-gray-200">
-          <Image
-            src="/images/upi-qr.png"
-            alt="UPI QR Code"
-            width={224}
-            height={224}
-            className="w-full h-full object-contain"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-          <div
-            ref={(el) => { bracketRefs.current[0] = el; }}
-            className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-[#C9B99A]"
-          />
-          <div
-            ref={(el) => { bracketRefs.current[1] = el; }}
-            className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-[#C9B99A]"
-          />
-          <div
-            ref={(el) => { bracketRefs.current[2] = el; }}
-            className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-[#C9B99A]"
-          />
-          <div
-            ref={(el) => { bracketRefs.current[3] = el; }}
-            className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-[#C9B99A]"
-          />
-          <div
-            className="absolute inset-0 border-2 border-transparent animate-pulse"
-            style={{
-              animation: 'pulse-border 2.5s ease-out infinite',
-              boxShadow: '0 0 0 0 rgba(201, 185, 154, 0.4)',
-            }}
+        <div className="border-2 border-[#0A0A0A] p-2 bg-white inline-block shadow-[4px_4px_0px_#0A0A0A]">
+          <QRCodeSVG
+            value={upiUrl}
+            size={200}
+            level="H"
+            includeMargin={true}
           />
         </div>
+        <div
+          ref={(el) => { bracketRefs.current[0] = el; }}
+          className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-[#C9B99A]"
+        />
+        <div
+          ref={(el) => { bracketRefs.current[1] = el; }}
+          className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-[#C9B99A]"
+        />
+        <div
+          ref={(el) => { bracketRefs.current[2] = el; }}
+          className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-[#C9B99A]"
+        />
+        <div
+          ref={(el) => { bracketRefs.current[3] = el; }}
+          className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-[#C9B99A]"
+        />
+        <div
+          className="absolute inset-0 border-2 border-transparent animate-pulse"
+          style={{
+            animation: 'pulse-border 2.5s ease-out infinite',
+            boxShadow: '0 0 0 0 rgba(201, 185, 154, 0.4)',
+          }}
+        />
       </div>
 
-      <p className="font-inter text-[13px] text-gray-500 mb-3">Pay to: {UPI_NAME}</p>
+      <p className="font-mono text-sm text-center mt-2 text-gray-600">Pay to: {UPI_NAME}</p>
+      <p className="font-mono text-xs text-center text-gray-400">UPI ID: {UPI_ID}</p>
 
       <div className={`font-inter text-[12px] ${timeLeft < 60 ? 'text-red-500' : 'text-gray-500'}`}>
         QR expires in {formatTime(timeLeft)}
@@ -405,9 +405,44 @@ export default function PaymentPage() {
     }
 
     setIsVerifying(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     const orderNumber = `BFZ-${Date.now().toString().slice(-6)}`;
+    const checkout = JSON.parse(localStorage.getItem('bfz_checkout') || '{}');
+
+    try {
+      await addOrder({
+        orderNumber,
+        customerName: checkout.fullName || 'Customer',
+        phone: checkout.phone || '',
+        email: checkout.email || '',
+        address: checkout.address || '',
+        city: checkout.city || '',
+        state: checkout.state || '',
+        pincode: checkout.pincode || '',
+        landmark: checkout.landmark || '',
+        items: items.map((item: CartItem) => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.variant?.size || 'M',
+          color: item.variant?.color || 'Default',
+          image: item.image,
+        })),
+        subtotal,
+        shipping,
+        platformFee: 10,
+        total,
+        paymentMethod: 'UPI',
+        utr: UTR,
+        paymentStatus: 'pending',
+        orderStatus: 'confirmed',
+      });
+    } catch (err) {
+      console.error('Error saving order to Firebase:', err);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('order-number', orderNumber);
@@ -416,6 +451,8 @@ export default function PaymentPage() {
         amount: total,
         items: items.length,
         date: new Date().toISOString(),
+        customerName: checkout.fullName,
+        address: checkout.address,
       }));
     }
 
@@ -592,6 +629,39 @@ export default function PaymentPage() {
                   const checkout = JSON.parse(localStorage.getItem('bfz_checkout') || '{}');
                   const orderNumber = `BFZ-${Date.now().toString().slice(-6)}`;
                   
+                  try {
+                    await addOrder({
+                      orderNumber,
+                      customerName: checkout.fullName || 'Customer',
+                      phone: checkout.phone || '',
+                      email: checkout.email || '',
+                      address: checkout.address || '',
+                      city: checkout.city || '',
+                      state: checkout.state || '',
+                      pincode: checkout.pincode || '',
+                      landmark: checkout.landmark || '',
+                      items: items.map((item: CartItem) => ({
+                        id: item.id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        size: item.variant?.size || 'M',
+                        color: item.variant?.color || 'Default',
+                        image: item.image,
+                      })),
+                      subtotal,
+                      shipping,
+                      platformFee: 10,
+                      total,
+                      paymentMethod: 'COD',
+                      utr: '',
+                      paymentStatus: 'pending',
+                      orderStatus: 'confirmed',
+                    });
+                  } catch (err) {
+                    console.error('Error saving COD order to Firebase:', err);
+                  }
+                  
                   if (typeof window !== 'undefined') {
                     sessionStorage.setItem('order-number', orderNumber);
                     localStorage.setItem('bfz_last_order', JSON.stringify({
@@ -599,6 +669,8 @@ export default function PaymentPage() {
                       amount: total,
                       items: items.length,
                       date: new Date().toISOString(),
+                      customerName: checkout.fullName,
+                      address: checkout.address,
                     }));
                   }
                   

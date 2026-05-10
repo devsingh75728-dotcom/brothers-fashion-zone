@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { getCoupons, deleteCoupon } from '@/lib/db';
 import toast from 'react-hot-toast';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 
@@ -17,9 +17,8 @@ export default function AdminCouponsPage() {
 
   const fetchCoupons = async () => {
     try {
-      const { data, error } = await supabase.from('coupons').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      setCoupons(data || []);
+      const data = await getCoupons();
+      setCoupons(data);
     } catch (err) {
       console.error('Error fetching coupons:', err);
     } finally {
@@ -27,11 +26,15 @@ export default function AdminCouponsPage() {
     }
   };
 
-  const deleteCoupon = async (id: string) => {
+  const handleDeleteCoupon = async (id: string) => {
     if (!confirm('Delete this coupon?')) return;
-    await supabase.from('coupons').delete().eq('id', id);
-    setCoupons(coupons.filter((c) => c.id !== id));
-    toast.success('Coupon deleted');
+    try {
+      await deleteCoupon(id);
+      setCoupons(coupons.filter((c) => c.id !== id));
+      toast.success('Coupon deleted');
+    } catch (err) {
+      toast.error('Failed to delete coupon');
+    }
   };
 
   return (

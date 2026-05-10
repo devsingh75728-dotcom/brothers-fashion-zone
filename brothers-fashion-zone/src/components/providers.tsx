@@ -1,18 +1,18 @@
 'use client'
 
-import { ThemeProvider } from 'next-themes'
 import { Toaster } from 'react-hot-toast'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 
 export function Providers({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="light"
-      enableSystem={false}
-      disableTransitionOnChange
-    >
-      {children}
+    <>
+      {mounted && children}
       <Toaster
         position="bottom-right"
         toastOptions={{
@@ -26,6 +26,6 @@ export function Providers({ children }: { children: ReactNode }) {
           },
         }}
       />
-    </ThemeProvider>
+    </>
   )
 }

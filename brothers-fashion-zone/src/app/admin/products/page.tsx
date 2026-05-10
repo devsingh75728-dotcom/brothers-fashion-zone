@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Search, Plus, Sparkles, Package, Pencil, Trash2, Star, MoreVertical, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { supabase } from '@/lib/supabase';
+import { getProducts, deleteProduct, updateProduct } from '@/lib/db';
 import { ProductFormModal } from '@/components/admin/ProductFormModal';
 
 interface Product {
@@ -14,12 +14,17 @@ interface Product {
   slug: string;
   category: string;
   price: number;
-  original_price: number;
+  originalPrice: number;
+  original_price?: number;
   images: string[];
-  total_stock: number;
-  is_featured: boolean;
-  is_active: boolean;
-  created_at: string;
+  totalStock: number;
+  total_stock?: number;
+  isFeatured: boolean;
+  is_featured?: boolean;
+  isActive: boolean;
+  is_active?: boolean;
+  createdAt?: any;
+  created_at?: string;
 }
 
 const tabs = [
@@ -41,16 +46,8 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setProducts([]);
-        return;
-      }
-      setProducts(data || []);
+      const data = await getProducts();
+      setProducts(data as Product[]);
     } catch (err) {
       console.warn('Could not load products');
       setProducts([]);
@@ -63,38 +60,38 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, []);
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = products.filter((p: any) => {
     const matchesSearch = p.name?.toLowerCase().includes(searchQuery.toLowerCase());
     
     switch (activeTab) {
       case 'active':
-        return matchesSearch && p.is_active;
+        return matchesSearch && (p.is_active || p.isActive);
       case 'low_stock':
-        return matchesSearch && p.total_stock > 0 && p.total_stock <= 5;
+        return matchesSearch && (p.total_stock || p.totalStock) > 0 && (p.total_stock || p.totalStock) <= 5;
       case 'out_of_stock':
-        return matchesSearch && p.total_stock === 0;
+        return matchesSearch && (p.total_stock || p.totalStock) === 0;
       case 'featured':
-        return matchesSearch && p.is_featured;
+        return matchesSearch && (p.is_featured || p.isFeatured);
       default:
         return matchesSearch;
     }
   });
 
   const toggleFeatured = async (id: string, current: boolean) => {
-    await supabase.from('products').update({ is_featured: !current }).eq('id', id);
-    setProducts(products.map((p) => p.id === id ? { ...p, is_featured: !current } : p));
+    await updateProduct(id, { isFeatured: !current });
+    setProducts(products.map((p) => p.id === id ? { ...p, isFeatured: !current } : p));
     toast.success(!current ? 'Added to featured' : 'Removed from featured');
   };
 
   const toggleActive = async (id: string, current: boolean) => {
-    await supabase.from('products').update({ is_active: !current }).eq('id', id);
-    setProducts(products.map((p) => p.id === id ? { ...p, is_active: !current } : p));
+    await updateProduct(id, { isActive: !current });
+    setProducts(products.map((p) => p.id === id ? { ...p, isActive: !current } : p));
     toast.success(!current ? 'Product activated' : 'Product deactivated');
   };
 
-  const deleteProduct = async (id: string) => {
+  const handleDeleteProduct = async (id: string) => {
     if (!confirm('Delete this product? This cannot be undone.')) return;
-    await supabase.from('products').delete().eq('id', id);
+    await deleteProduct(id);
     setProducts(products.filter((p) => p.id !== id));
     toast.success('Product deleted');
   };
@@ -217,19 +214,19 @@ export default function AdminProductsPage() {
               {/* Price */}
               <div className="col-span-2">
                 <p className="text-white font-inter text-[14px] font-semibold">₹{product.price?.toLocaleString()}</p>
-                {product.original_price > product.price && (
-                  <p className="text-white/40 font-inter text-xs line-through">₹{product.original_price?.toLocaleString()}</p>
+                {(product.original_price || product.originalPrice) > product.price && (
+                  <p className="text-white/40 font-inter text-xs line-through">₹{(product.original_price || product.originalPrice)?.toLocaleString()}</p>
                 )}
               </div>
 
               {/* Stock */}
               <div className="col-span-2">
-                {product.total_stock === 0 ? (
+                {(product.total_stock || product.totalStock) === 0 ? (
                   <span className="inline-flex px-2 py-1 rounded-full text-[11px] font-semibold bg-[rgba(220,38,38,0.15)] text-[#DC2626] border border-[rgba(220,38,38,0.3)]">Out of Stock</span>
-                ) : product.total_stock <= 5 ? (
-                  <span className="inline-flex px-2 py-1 rounded-full text-[11px] font-semibold bg-[rgba(217,119,6,0.15)] text-[#D97706] border border-[rgba(217,119,6,0.3)]">Low: {product.total_stock}</span>
+                ) : (product.total_stock || product.totalStock) <= 5 ? (
+                  <span className="inline-flex px-2 py-1 rounded-full text-[11px] font-semibold bg-[rgba(217,119,6,0.15)] text-[#D97706] border border-[rgba(217,119,6,0.3)]">Low: {product.total_stock || product.totalStock}</span>
                 ) : (
-                  <span className="inline-flex px-2 py-1 rounded-full text-[11px] font-semibold bg-[rgba(22,163,74,0.15)] text-[#16A34A] border border-[rgba(22,163,74,0.3)]">{product.total_stock} in stock</span>
+                  <span className="inline-flex px-2 py-1 rounded-full text-[11px] font-semibold bg-[rgba(22,163,74,0.15)] text-[#16A34A] border border-[rgba(22,163,74,0.3)]">{product.total_stock || product.totalStock} in stock</span>
                 )}
               </div>
 
@@ -243,13 +240,13 @@ export default function AdminProductsPage() {
                   <Eye size={14} />
                 </button>
                 <button 
-                  onClick={() => toggleFeatured(product.id, product.is_featured)}
+                  onClick={() => toggleFeatured(product.id, !!(product.is_featured || product.isFeatured))}
                   className="w-8 h-8 flex items-center justify-center rounded border border-[#222] transition-colors"
                   title="Toggle Featured"
                 >
                   <Star 
                     size={14} 
-                    className={product.is_featured ? 'text-yellow-400 fill-yellow-400' : 'text-white/30'} 
+                    className={(product.is_featured || product.isFeatured) ? 'text-yellow-400 fill-yellow-400' : 'text-white/30'} 
                   />
                 </button>
                 <button 
@@ -260,7 +257,7 @@ export default function AdminProductsPage() {
                   <Pencil size={14} />
                 </button>
                 <button 
-                  onClick={() => deleteProduct(product.id)}
+                  onClick={() => handleDeleteProduct(product.id)}
                   className="w-8 h-8 flex items-center justify-center rounded border border-[#222] text-white/40 hover:text-[#DC2626] hover:border-[#DC2626] transition-colors"
                   title="Delete"
                 >

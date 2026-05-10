@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { OrdersTable } from '@/components/admin/OrdersTable';
-import { supabase } from '@/lib/supabase';
+import { getOrders, updateOrder } from '@/lib/db';
 import toast from 'react-hot-toast';
 
 const STATUS_TABS = ['all', 'pending', 'verified', 'dispatched', 'delivered', 'cancelled'];
@@ -21,16 +21,10 @@ export default function AdminOrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      let query = supabase.from('orders').select('*').order('created_at', { ascending: false });
-      if (activeTab !== 'all') {
-        query = query.eq('payment_status', activeTab);
-      }
-      const { data, error } = await query;
-      if (error) throw error;
-      setOrders(data || []);
-    } catch (err) {
-      console.error('Error fetching orders:', err);
-      toast.error('Failed to load orders');
+      const data = await getOrders();
+      setOrders(data);
+    } catch {
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -39,12 +33,12 @@ export default function AdminOrdersPage() {
   const updateOrderStatus = async (id: string, field: string, value: string) => {
     const updated = orders.map((o) => o.id === id ? { ...o, [field]: value } : o);
     setOrders(updated);
-    const { error } = await supabase.from('orders').update({ [field]: value }).eq('id', id);
-    if (error) {
+    try {
+      await updateOrder(id, { [field]: value });
+      toast.success('Order updated!');
+    } catch (err) {
       toast.error('Update failed');
       fetchOrders();
-    } else {
-      toast.success('Order updated!');
     }
   };
 

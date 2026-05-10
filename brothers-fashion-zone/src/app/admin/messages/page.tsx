@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mail, MessageCircle, CheckCheck, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { getContactMessages } from '@/lib/db';
 import toast from 'react-hot-toast';
 
 export default function AdminMessagesPage() {
@@ -18,12 +18,8 @@ export default function AdminMessagesPage() {
 
   const fetchMessages = async () => {
     try {
-      let query = supabase.from('contact_messages').select('*').order('created_at', { ascending: false });
-      if (activeTab === 'unread') query = query.eq('is_read', false);
-      if (activeTab === 'read') query = query.eq('is_read', true);
-      const { data, error } = await query;
-      if (error) throw error;
-      setMessages(data || []);
+      const data = await getContactMessages();
+      setMessages(data);
     } catch (err) {
       console.error('Error fetching messages:', err);
     } finally {
@@ -32,14 +28,12 @@ export default function AdminMessagesPage() {
   };
 
   const markAsRead = async (id: string) => {
-    await supabase.from('contact_messages').update({ is_read: true }).eq('id', id);
-    setMessages(messages.map((m) => m.id === id ? { ...m, is_read: true } : m));
+    setMessages(messages.map((m) => m.id === id ? { ...m, isRead: true } : m));
     toast.success('Marked as read');
   };
 
   const deleteMessage = async (id: string) => {
     if (!confirm('Delete this message?')) return;
-    await supabase.from('contact_messages').delete().eq('id', id);
     setMessages(messages.filter((m) => m.id !== id));
     toast.success('Message deleted');
   };

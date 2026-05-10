@@ -7,7 +7,7 @@ import {
   IndianRupee, ShoppingBag, Package, MessageCircle, 
   Plus, Eye, Video, ExternalLink 
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { getOrders, getProducts, getContactMessages } from '@/lib/db';
 
 interface Stats {
   totalRevenue: number;
@@ -34,19 +34,21 @@ export default function AdminDashboard() {
       try {
         const today = new Date().toISOString().split('T')[0];
 
-        const [ordersRes, productsRes, messagesRes] = await Promise.all([
-          supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(100),
-          supabase.from('products').select('name, total_stock'),
-          supabase.from('contact_messages').select('*', { count: 'exact', head: true }).eq('is_read', false),
+        const [orders, products, messages] = await Promise.all([
+          getOrders(),
+          getProducts(),
+          getContactMessages(),
         ]);
 
-        const orders = ordersRes.data || [];
-        const products = productsRes.data || [];
+        const verifiedOrders = orders.filter((o: any) => o.paymentStatus === 'verified' || o.payment_status === 'verified');
+        const totalRevenue = verifiedOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || o.total_amount || 0), 0);
         
-        const verifiedOrders = orders.filter((o: any) => o.payment_status === 'verified');
-        const totalRevenue = verifiedOrders.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0);
-        const todayCount = orders.filter((o: any) => o.created_at?.startsWith(today)).length;
-        const outOfStockCount = products.filter((p: any) => p.total_stock === 0).length;
+        const todayCount = orders.filter((o: any) => {
+          const createdAt = o.createdAt?.toDate ? o.createdAt.toDate() : o.created_at;
+          return createdAt && createdAt.toString().startsWith(today);
+        }).length;
+        
+        const outOfStockCount = products.filter((p: any) => (p.totalStock || p.total_stock) === 0).length;
 
         setStats({
           totalRevenue,
@@ -54,7 +56,7 @@ export default function AdminDashboard() {
           todayOrders: todayCount,
           totalProducts: products.length,
           outOfStock: outOfStockCount,
-          unreadMessages: messagesRes.count || 0,
+          unreadMessages: messages.filter((m: any) => !m.isRead && !m.is_read).length,
         });
       } catch (err) {
         console.warn('Could not fetch stats');
@@ -64,13 +66,6 @@ export default function AdminDashboard() {
     };
 
     fetchStats();
-
-    const channel = supabase.channel('admin-dashboard')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchStats())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => fetchStats())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const statCards = [

@@ -9,11 +9,16 @@ const ROW2 = '🔥 Summer Sale — Up to 50% OFF  •  👗 New Women\'s Collect
 
 export function AnnouncementBar() {
   const [visible, setVisible] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const row1Ref = useRef<HTMLDivElement>(null);
   const row2Ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!visible) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !visible) {
       document.documentElement.style.setProperty('--announcement-height', '0px');
       return;
     }
